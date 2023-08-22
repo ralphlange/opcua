@@ -23,6 +23,7 @@
 namespace DevOpcua {
 
 static const char defaultElementDelimiter = '.';
+static const std::string defaultLinkDelimiters = "'; \t";
 
 bool getYesNo(const char c);
 
@@ -39,6 +40,21 @@ bool getYesNo(const char c);
  */
 std::list<std::string> splitString(const std::string &str,
                                    const char delim = defaultElementDelimiter);
+
+/**
+ * @brief Tokenize string based on set of delimiters.
+ *
+ * Allows for string literals enclosed in `'` to account for strings containing delimiters.
+ * Delimiters at the beginning and end are ignored, multiple subsequent delimiters are treated as single delimiter.
+ *
+ * @param str  string to split
+ * @param delim  token delimiter
+ *
+ * @return  tokens in order of appearance as vector<string>
+ */
+std::vector<std::string> tokenize(const std::string &str,
+                                  const std::string &delim = defaultLinkDelimiters);
+
 
 std::unique_ptr<linkInfo> parseLink(dbCommon *prec, const DBEntry &ent);
 

@@ -76,6 +76,38 @@ splitString(const std::string &str, const char delim)
     return tokens;
 }
 
+std::vector<std::string> tokenize(const std::string &str, const std::string &delimiters) {
+    std::vector<std::string> tokens;
+    std::string token;
+    bool inStringLiteral = false;
+
+    for (char c : str) {
+        if (c == '\'') {
+            inStringLiteral = !inStringLiteral;
+            continue;
+        }
+
+        if (inStringLiteral) {
+            token += c;
+        } else {
+            if (delimiters.find(c) != std::string::npos) {
+                if (!token.empty()) {
+                    tokens.push_back(token);
+                    token.clear();
+                }
+            } else {
+                token += c;
+            }
+        }
+    }
+
+    if (!token.empty()) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
 std::unique_ptr<linkInfo>
 parseLink (dbCommon *prec, const DBEntry &ent)
 {
@@ -196,14 +228,22 @@ parseLink (dbCommon *prec, const DBEntry &ent)
     if (!link->value.instio.string)
         throw std::runtime_error(SB() << "INP/OUT not set");
     std::string linkstr(link->value.instio.string);
-    if (debug > 4)
+    if (debug > 4) {
         std::cerr << prec->name << " parsing inp/out link '" << linkstr << "'" << std::endl;
+    }
 
-    size_t sep, send;
+    // tokenize the entire inp/out link
+    std::vector<std::string> tokens = tokenize(linkstr, defaultLinkDelimiters);
+    if (debug > 19) {
+        std::cerr << prec->name << " link tokens:" << std::endl;
+        for (std::string &token : tokens) {
+            std::cerr << token << std::endl;
+        }
+    }
 
-    // first token: session or subscription or itemRecord name
-    send = linkstr.find_first_of("; \t", 0);
-    std::string name = linkstr.substr(0, send);
+    // pop first element of vector
+    std::string name = tokens.front();
+    tokens.erase(tokens.begin());
 
     Subscription *sub = Subscription::find(name);
     if (sub) {
@@ -232,30 +272,25 @@ parseLink (dbCommon *prec, const DBEntry &ent)
                                      << name << "' was not initialized correctly");
         }
         pinfo->item = pconnector->pitem;
-        sep = linkstr.find_first_not_of("; \t", send);
+
         dbFinishEntry(&entry);
     } else {
         throw std::runtime_error(SB() << "link is missing subscription/session/opcuaItemRecord name");
     }
 
-    sep = linkstr.find_first_not_of("; \t", send);
-
     // everything else is "key=value ..." options
-    while (sep != std::string::npos && sep < linkstr.size()) {
-        send = linkstr.find_first_of("; \t", sep);
-        size_t seq = linkstr.find_first_of('=', sep);
+    // consume tokens till exhausted
+    while(!tokens.empty()){
+        std::string token = tokens.back();
+        tokens.pop_back();
 
-        // allow escaping separators
-        while (send != std::string::npos && linkstr[send-1] == '\\') {
-                linkstr.erase(send-1, 1);
-                send = linkstr.find_first_of("; \t", send);
+        size_t seq = token.find('=');
+        if (seq == std::string::npos) {
+            throw std::runtime_error(SB() << "expected '=' in '" << token << "'");
         }
-
-        if (seq == std::string::npos || (send != std::string::npos && seq >= send))
-            throw std::runtime_error(SB() << "expected '=' in '" << linkstr.substr(0, send) << "'");
-
-        std::string optname(linkstr.substr(sep, seq-sep)),
-                    optval (linkstr.substr(seq+1, send-seq-1));
+        std::pair<std::string, std::string> kvPair = std::make_pair(token.substr(0, seq), token.substr(seq + 1));
+        std::string optname(kvPair.first);
+        std::string optval(kvPair.second);
 
         if (debug > 19) {
             std::cerr << prec->name << " opt '" << optname << "'='" << optval << "'" << std::endl;
@@ -329,8 +364,6 @@ parseLink (dbCommon *prec, const DBEntry &ent)
         } else {
             throw std::runtime_error(SB() << "invalid option '" << optname << "'");
         }
-
-        sep = linkstr.find_first_not_of("; \t", send);
     }
 
     if (!pinfo->clientQueueSize) {
