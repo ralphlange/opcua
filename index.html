@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>OPC UA Device Support &#8212; OPC UA Device Support 0.10.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=0868e8a2" />
+    <script src="_static/documentation_options.js?v=82662543"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview" href="overview.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="opc-ua-device-support">
+<h1>OPC UA Device Support<a class="headerlink" href="#opc-ua-device-support" title="Link to this heading">¶</a></h1>
+<p><a class="reference external" href="https://epics-controls.org">EPICS</a>
+Device Support module for interfacing to controllers and servers using the
+<a class="reference external" href="https://opcfoundation.org/about/opc-technologies/opc-ua/">OPC UA</a> protocol.</p>
+<ul class="simple">
+<li><p>Sources: <a class="reference external" href="https://github.com/epics-modules/opcua">https://github.com/epics-modules/opcua</a></p></li>
+<li><p>Documentation: <a class="reference external" href="https://epics-modules.github.io/opcua">https://epics-modules.github.io/opcua</a></p></li>
+<li><p>Usage / FAQ (Wiki): <a class="reference external" href="https://github.com/epics-modules/opcua/wiki">https://github.com/epics-modules/opcua/wiki</a></p></li>
+<li><p><a class="reference external" href="https://github.com/epics-modules/opcua/issues">Issues</a> (see <span class="xref std std-ref">reportbug</span>)</p></li>
+<li><p><span class="xref std std-ref">contrib</span></p></li>
+</ul>
+<p>The Device Support sits on top of a low-level OPC UA client library.
+Two SDKs are supported - you need to choose and provide one of them:</p>
+<ul class="simple">
+<li><p>The commercially available Unified Automation C++ Based
+<a class="reference external" href="https://www.unified-automation.com/products/client-sdk/c-ua-client-sdk.html">OPC UA Client SDK</a></p></li>
+<li><p>The freely available client SDK of the
+<a class="reference external" href="https://open62541.org/">open62541 project</a></p></li>
+</ul>
+<p>Linux and Windows builds are supported for both client library options.</p>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>A C++11 compliant compiler</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>GCC &gt;= 4.6</p></li>
+<li><p>Visual Studio &gt;= 2015 / 12.0</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p><a class="reference external" href="https://epics-controls.org/resources-and-support/base/">EPICS Base</a>
+&gt;= 3.15.7 or EPICS 7 &gt;= 7.0.4</p></li>
+<li><p>One of the two supported SDKs (see above)</p></li>
+<li><p>(optional) The <a class="reference external" href="https://github.com/epics-modules/gtest">gtest module</a>
+if you want to compile and run the unit tests</p></li>
+</ul>
+<p>See <span class="xref std std-ref">building</span> for details.</p>
+</section>
+<section id="download">
+<h2>Download<a class="headerlink" href="#download" title="Link to this heading">¶</a></h2>
+<p>Releases are published at <a class="reference external" href="https://github.com/epics-modules/opcua/releases">https://github.com/epics-modules/opcua/releases</a>.</p>
+<p>This includes binary distribution tars,
+which allow using the commercial Unified Automation Client SDK libraries
+without any purchase or fee.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#basics">Basics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#what-is-epics">What is EPICS?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#what-is-opc-ua">What is OPC UA?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#opc-ua-terms-and-concepts">OPC UA Terms and Concepts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#node">Node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#nodeid">NodeID</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#item">Item</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#data-element">Data Element</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#namespace">Namespace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#channel">Channel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#session">Session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#subscription">Subscription</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#the-opc-ua-device-support">The OPC UA Device Support</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="overview.html#addressing-basic-array-and-structured-types">Addressing Basic/Array and Structured Types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="credits.html">Credits</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="credits.html#authors">Authors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="credits.html#documentation">Documentation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">OPC UA Device Support</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="credits.html">Credits</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="overview.html" title="next chapter">Overview</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Ralph Lange et al.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
