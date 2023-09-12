@@ -542,7 +542,7 @@ DataElementUaSdk::readArray (char *value, const epicsUInt32 len,
 
     ProcessReason nReason;
     std::shared_ptr<UpdateUaSdk> upd = incomingQueue.popUpdate(&nReason);
-    dbgReadArray(upd.get(), num, epicsTypeString(*value));
+    dbgReadArray(upd.get(), num, epicsTypeString(value));
 
     switch (upd->getType()) {
     case ProcessReason::readFailure:
@@ -571,7 +571,7 @@ DataElementUaSdk::readArray (char *value, const epicsUInt32 len,
                     ret = 1;
                 } else if (data.type() != expectedType) {
                     errlogPrintf("%s : incoming data type (%s) does not match EPICS array type (%s)\n",
-                                 prec->name, variantTypeString(data.type()), epicsTypeString(*value));
+                                 prec->name, variantTypeString(data.type()), epicsTypeString(value));
                     (void) recGblSetSevr(prec, READ_ALARM, INVALID_ALARM);
                     ret = 1;
                 } else {
@@ -632,7 +632,7 @@ DataElementUaSdk::readArray<epicsUInt8, UaByteArray> (epicsUInt8 *value, const e
 
     ProcessReason nReason;
     std::shared_ptr<UpdateUaSdk> upd = incomingQueue.popUpdate(&nReason);
-    dbgReadArray(upd.get(), num, epicsTypeString(*value));
+    dbgReadArray(upd.get(), num, epicsTypeString(value));
 
     switch (upd->getType()) {
     case ProcessReason::readFailure:
@@ -661,7 +661,7 @@ DataElementUaSdk::readArray<epicsUInt8, UaByteArray> (epicsUInt8 *value, const e
                     ret = 1;
                 } else if (data.type() != expectedType) {
                     errlogPrintf("%s : incoming data type (%s) does not match EPICS array type (%s)\n",
-                                 prec->name, variantTypeString(data.type()), epicsTypeString(*value));
+                                 prec->name, variantTypeString(data.type()), epicsTypeString(value));
                     (void) recGblSetSevr(prec, READ_ALARM, INVALID_ALARM);
                     ret = 1;
                 } else {
@@ -1040,7 +1040,7 @@ DataElementUaSdk::writeArray (const char **value, const epicsUInt32 len,
                      prec->name,
                      variantTypeString(incomingData.type()),
                      variantTypeString(targetType),
-                     epicsTypeString(**value));
+                     epicsTypeString(*value));
         (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
         ret = 1;
     } else {
@@ -1067,7 +1067,7 @@ DataElementUaSdk::writeArray (const char **value, const epicsUInt32 len,
             markAsDirty();
         }
 
-        dbgWriteArray(num, epicsTypeString(**value));
+        dbgWriteArray(num, epicsTypeString(*value));
     }
     return ret;
 }
@@ -1092,7 +1092,7 @@ DataElementUaSdk::writeArray<epicsUInt8, UaByteArray, OpcUa_Byte> (const epicsUI
                      prec->name,
                      variantTypeString(incomingData.type()),
                      variantTypeString(targetType),
-                     epicsTypeString(*value));
+                     epicsTypeString(value));
         (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
         ret = 1;
     } else {
@@ -1103,7 +1103,7 @@ DataElementUaSdk::writeArray<epicsUInt8, UaByteArray, OpcUa_Byte> (const epicsUI
             markAsDirty();
         }
 
-        dbgWriteArray(num, epicsTypeString(*value));
+        dbgWriteArray(num, epicsTypeString(value));
     }
     return ret;
 }

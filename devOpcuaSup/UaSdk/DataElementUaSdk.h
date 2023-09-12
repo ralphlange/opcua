@@ -35,17 +35,17 @@ class ItemUaSdk;
 
 typedef Update<UaVariant, OpcUa_StatusCode> UpdateUaSdk;
 
-inline const char *epicsTypeString (const epicsInt8 &) { return "epicsInt8"; }
-inline const char *epicsTypeString (const epicsUInt8 &) { return "epicsUInt8"; }
-inline const char *epicsTypeString (const epicsInt16 &) { return "epicsInt16"; }
-inline const char *epicsTypeString (const epicsUInt16 &) { return "epicsUInt16"; }
-inline const char *epicsTypeString (const epicsInt32 &) { return "epicsInt32"; }
-inline const char *epicsTypeString (const epicsUInt32 &) { return "epicsUInt32"; }
-inline const char *epicsTypeString (const epicsInt64 &) { return "epicsInt64"; }
-inline const char *epicsTypeString (const epicsUInt64 &) { return "epicsUInt64"; }
-inline const char *epicsTypeString (const epicsFloat32 &) { return "epicsFloat32"; }
-inline const char *epicsTypeString (const epicsFloat64 &) { return "epicsFloat64"; }
-inline const char *epicsTypeString (const char* &) { return "epicsString"; }
+inline const char *epicsTypeString (const epicsInt8 *) { return "epicsInt8"; }
+inline const char *epicsTypeString (const epicsUInt8 *) { return "epicsUInt8"; }
+inline const char *epicsTypeString (const epicsInt16 *) { return "epicsInt16"; }
+inline const char *epicsTypeString (const epicsUInt16 *) { return "epicsUInt16"; }
+inline const char *epicsTypeString (const epicsInt32 *) { return "epicsInt32"; }
+inline const char *epicsTypeString (const epicsUInt32 *) { return "epicsUInt32"; }
+inline const char *epicsTypeString (const epicsInt64 *) { return "epicsInt64"; }
+inline const char *epicsTypeString (const epicsUInt64 *) { return "epicsUInt64"; }
+inline const char *epicsTypeString (const epicsFloat32 *) { return "epicsFloat32"; }
+inline const char *epicsTypeString (const epicsFloat64 *) { return "epicsFloat64"; }
+inline const char *epicsTypeString (const char *) { return "epicsString"; }
 
 inline const char *
 variantTypeString (const OpcUa_BuiltInType type)
@@ -766,7 +766,7 @@ private:
 
         ProcessReason nReason;
         std::shared_ptr<UpdateUaSdk> upd = incomingQueue.popUpdate(&nReason);
-        dbgReadScalar(upd.get(), epicsTypeString(*value));
+        dbgReadScalar(upd.get(), epicsTypeString(value));
 
         switch (upd->getType()) {
         case ProcessReason::readFailure:
@@ -844,7 +844,7 @@ private:
 
         ProcessReason nReason;
         std::shared_ptr<UpdateUaSdk> upd = incomingQueue.popUpdate(&nReason);
-        dbgReadArray(upd.get(), num, epicsTypeString(*value));
+        dbgReadArray(upd.get(), num, epicsTypeString(value));
 
         switch (upd->getType()) {
         case ProcessReason::readFailure:
@@ -873,7 +873,7 @@ private:
                         ret = 1;
                     } else if (data.type() != expectedType) {
                         errlogPrintf("%s : incoming data type (%s) does not match EPICS array type (%s)\n",
-                                     prec->name, variantTypeString(data.type()), epicsTypeString(*value));
+                                     prec->name, variantTypeString(data.type()), epicsTypeString(value));
                         (void) recGblSetSevr(prec, READ_ALARM, INVALID_ALARM);
                         ret = 1;
                     } else {
@@ -1081,7 +1081,7 @@ private:
                          prec->name,
                          variantTypeString(incomingData.type()),
                          variantTypeString(targetType),
-                         epicsTypeString(*value));
+                         epicsTypeString(value));
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
             ret = 1;
         } else {
@@ -1095,7 +1095,7 @@ private:
                 markAsDirty();
             }
 
-            dbgWriteArray(num, epicsTypeString(*value));
+            dbgWriteArray(num, epicsTypeString(value));
         }
         return ret;
     }
