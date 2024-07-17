@@ -21,6 +21,10 @@ endif
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #=============================
 
+# Add support for drop-in compatibility with "open62541" Device Support
+# see https://github.com/KIT-IBPT/epics-open62541
+OPEN62541_COMPAT := YES
+
 # Windows builds define NOMINMAX (macros min, max clash with numeric_limits<>)
 # and CALLBACK (clashes with EPICS callback.h)
 USR_CXXFLAGS_WIN32 += -DNOMINMAX
@@ -49,9 +53,16 @@ DBD_INSTALLS += $(COMMON_DIR)/devOpcua.dbd
 COMMON_ASSEMBLIES += devOpcua.dbd
 
 ifdef BASE_3_16
-devOpcua.dbd_SNIPPETS += ../10_devOpcuaInt64.dbd
+  devOpcua.dbd_SNIPPETS += ../10_devOpcuaInt64.dbd
 endif
 devOpcua.dbd_SNIPPETS += ../20_devOpcuaAll.dbd
+
+ifdef OPEN62541_COMPAT
+  ifdef BASE_3_16
+    devOpcua.dbd_SNIPPETS += ../30_devOpen62541_compatInt64.dbd
+  endif
+  devOpcua.dbd_SNIPPETS += ../40_devOpen62541_compat.dbd
+endif
 
 # Generic sources and interfaces
 opcua_SRCS += devOpcua.cpp
