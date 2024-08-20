@@ -25,6 +25,9 @@
 #include <iocsh.h>
 #include <errlog.h>
 #include <epicsThread.h>
+#include <initHooks.h>
+#include <dbStaticLib.h>
+#include <dbAccess.h>
 
 #include <epicsExport.h>  // defines epicsExportSharedSymbols
 #include "devOpcua.h"
@@ -1116,6 +1119,7 @@ void opcuaIocshRegister ()
     iocshRegister(&iocshOpen62541SetSubscriptionLifetimeCountFuncDef, iocshOpen62541IgnoreSubscriptionSettingIFunc);
     iocshRegister(&iocshOpen62541SetSubscriptionMaxKeepAliveCountFuncDef, iocshOpen62541IgnoreSubscriptionSettingIFunc);
     iocshRegister(&iocshOpen62541SetSubscriptionPublishingIntervalFuncDef, iocshOpen62541IgnoreSubscriptionSettingDFunc);
+    (void) initHookRegister(linkConvert);
 #endif
 }
 
