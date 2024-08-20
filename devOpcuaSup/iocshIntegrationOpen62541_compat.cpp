@@ -160,3 +160,148 @@ static void iocshOpen62541IgnoreSubscriptionSettingDFunc(const iocshArgBuf *args
     sub = Subscription::createSubscription(name.c_str(), connectionId, doubleValue);
 }
 
+/**
+ * Mechanism (driven through initHooks) to swap the open62541 links with OPCUA links while iocInit() is running
+ */
+
+#include <string>
+#include <vector>
+
+std::vector<std::string> tokenize_string(const std::string &input,
+                                         const std::string &delimiters,
+                                         char escape_char)
+{
+    std::vector<std::string> tokens;
+    std::string token;
+
+    bool in_quotes = false;
+    size_t pos = 0;
+
+    while (pos < input.length()) {
+        char c = input[pos];
+
+        if (c == escape_char) {
+            ++pos;
+            if (pos >= input.length()) {
+                break; // Error: Unexpected end of line
+            }
+            token += input[pos];
+        } else if (c == '"') {
+            in_quotes = !in_quotes;
+        } else {
+            if (!in_quotes && delimiters.find(c) != std::string::npos) {
+                tokens.push_back(token);
+                token.clear();
+            } else {
+                token += c;
+            }
+        }
+        ++pos;
+    }
+    tokens.push_back(token);
+
+    return tokens;
+}
+
+std::string convertToOpcuaLink(const std::string &open62541Link)
+{
+    std::string delimiters = " ";
+    char escapeChar = '\\';
+    std::string subscriptionId;
+    std::string sampling, bini, ns, id, typ;
+    size_t pos = 0;
+
+    std::vector<std::string> tokens = tokenize_string(open62541Link, delimiters, escapeChar);
+
+    std::string connectionId = tokens[pos].substr(1);
+    subscriptionId = connectionId + "-default";
+
+    ++pos;
+
+    // Options
+    if (tokens[pos].at(0) == '(' && tokens[pos].back() == ')') {
+        std::string optionString = tokens[pos].substr(1, tokens[pos].size() - 2);
+
+        std::vector<std::string> options = tokenize_string(optionString, ",", escapeChar);
+        for (const auto &option : options) {
+            std::vector<std::string> kv = tokenize_string(option, "=", escapeChar);
+
+            if (kv[0] == "subscription")
+                subscriptionId = connectionId + "-" + kv[1];
+            if (kv[0] == "sampling_interval")
+                sampling = kv[1];
+            if (kv[0] == "no_read_on_init")
+                bini = "ignore";
+        }
+        ++pos;
+    }
+
+    // nodeID
+    std::vector<std::string> nodeTokens = tokenize_string(tokens[pos], ":,", escapeChar);
+    if (nodeTokens.size() != 3) {
+        errlogPrintf("Invalid node ID '%s'\n", tokens[pos].c_str());
+        return "";
+    }
+    if (nodeTokens[0] == "str")
+        typ = "s";
+    else if (nodeTokens[0] == "num")
+        typ = "i";
+    ns = nodeTokens[1];
+    id = nodeTokens[2];
+
+    std::string result = "@" + subscriptionId + " ns=" + ns + ";" + typ + "=\"" + id + "\"";
+    if (sampling.size())
+        result.append(" sampling=" + sampling);
+    if (bini.size())
+        result.append(" bini=" + bini);
+    return result;
+}
+
+void linkConvert(initHookState state)
+{
+    switch (state) {
+    case initHookAfterInitDevSup: {
+        DBENTRY entry;
+        long status;
+
+        errlogPrintf("OPC UA: open62541_compat mode is converting INP/OUT links\n");
+
+        dbInitEntry(pdbbase, &entry);
+
+        status = dbFirstRecordType(&entry);
+        if (status) {
+            errlogPrintf("No record types\n");
+            dbFinishEntry(&entry);
+            break;
+        }
+        while (!status) {
+            status = dbFirstRecord(&entry);
+            while (!status) {
+                if (!dbIsAlias(&entry)) {
+                    status = dbFindField(&entry, "DTYP");
+                    if (!status) {
+                        std::string dtyp = dbGetString(&entry);
+                        if (dtyp == "open62541") {
+                            status = dbFindField(&entry, "INP");
+                            if (status) {
+                                status = dbFindField(&entry, "OUT");
+                                if (status) {
+                                    errlogPrintf("DTYP=open62541, but no INP or OUT link\n");
+                                    break;
+                                }
+                            }
+                            std::string oldLink = dbGetString(&entry);
+                            status = dbPutString(&entry, convertToOpcuaLink(oldLink).c_str());
+                        }
+                    }
+                }
+                status = dbNextRecord(&entry);
+            }
+            status = dbNextRecordType(&entry);
+        }
+        dbFinishEntry(&entry);
+    } break;
+    default:
+        break;
+    }
+}
