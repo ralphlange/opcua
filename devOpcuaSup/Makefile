@@ -62,6 +62,8 @@ ifdef OPEN62541_COMPAT
     devOpcua.dbd_SNIPPETS += ../30_devOpen62541_compatInt64.dbd
   endif
   devOpcua.dbd_SNIPPETS += ../40_devOpen62541_compat.dbd
+
+  USR_CXXFLAGS += -DOPEN62541_COMPAT
 endif
 
 # Generic sources and interfaces

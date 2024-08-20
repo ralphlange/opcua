@@ -13,7 +13,7 @@
 #include <iostream>
 #include <set>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <stdexcept>
 
 #if defined(_WIN32)
@@ -1079,6 +1079,11 @@ static
     }
 }
 
+#ifdef OPEN62541_COMPAT
+  // Need to include the source because of the internal linkage (anonymous namespace)
+  #include "iocshIntegrationOpen62541_compat.cpp"
+#endif
+
 static
 void opcuaIocshRegister ()
 {
@@ -1105,6 +1110,13 @@ void opcuaIocshRegister ()
     iocshRegister(&opcuaShowSubscriptionFuncDef, opcuaShowSubscriptionCallFunc);
     iocshRegister(&opcuaDebugSubscriptionFuncDef, opcuaDebugSubscriptionCallFunc);
     iocshRegister(&opcuaShowDataFuncDef, opcuaShowDataCallFunc);
+
+#ifdef OPEN62541_COMPAT
+    iocshRegister(&iocshOpen62541ConnectionSetupFuncDef, iocshOpen62541ConnectionSetupFunc);
+    iocshRegister(&iocshOpen62541SetSubscriptionLifetimeCountFuncDef, iocshOpen62541IgnoreSubscriptionSettingIFunc);
+    iocshRegister(&iocshOpen62541SetSubscriptionMaxKeepAliveCountFuncDef, iocshOpen62541IgnoreSubscriptionSettingIFunc);
+    iocshRegister(&iocshOpen62541SetSubscriptionPublishingIntervalFuncDef, iocshOpen62541IgnoreSubscriptionSettingDFunc);
+#endif
 }
 
 extern "C" {
