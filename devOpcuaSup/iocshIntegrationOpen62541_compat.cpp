@@ -169,7 +169,8 @@ static void iocshOpen62541IgnoreSubscriptionSettingDFunc(const iocshArgBuf *args
 
 std::vector<std::string> tokenize_string(const std::string &input,
                                          const std::string &delimiters,
-                                         char escape_char)
+                                         bool use_quoted_strings = false,
+                                         char escape_char = '\\')
 {
     std::vector<std::string> tokens;
     std::string token;
@@ -186,7 +187,7 @@ std::vector<std::string> tokenize_string(const std::string &input,
                 break; // Error: Unexpected end of line
             }
             token += input[pos];
-        } else if (c == '"') {
+        } else if (use_quoted_strings && c == '"') {
             in_quotes = !in_quotes;
         } else {
             if (!in_quotes && delimiters.find(c) != std::string::npos) {
@@ -205,13 +206,11 @@ std::vector<std::string> tokenize_string(const std::string &input,
 
 std::string convertToOpcuaLink(const std::string &open62541Link)
 {
-    std::string delimiters = " ";
-    char escapeChar = '\\';
     std::string subscriptionId;
     std::string sampling, bini, ns, id, typ;
     size_t pos = 0;
 
-    std::vector<std::string> tokens = tokenize_string(open62541Link, delimiters, escapeChar);
+    std::vector<std::string> tokens = tokenize_string(open62541Link, " ");
 
     std::string connectionId = tokens[pos].substr(1);
     subscriptionId = connectionId + "-default";
@@ -222,9 +221,9 @@ std::string convertToOpcuaLink(const std::string &open62541Link)
     if (tokens[pos].at(0) == '(' && tokens[pos].back() == ')') {
         std::string optionString = tokens[pos].substr(1, tokens[pos].size() - 2);
 
-        std::vector<std::string> options = tokenize_string(optionString, ",", escapeChar);
+        std::vector<std::string> options = tokenize_string(optionString, ",");
         for (const auto &option : options) {
-            std::vector<std::string> kv = tokenize_string(option, "=", escapeChar);
+            std::vector<std::string> kv = tokenize_string(option, "=");
 
             if (kv[0] == "subscription")
                 subscriptionId = connectionId + "-" + kv[1];
@@ -237,19 +236,19 @@ std::string convertToOpcuaLink(const std::string &open62541Link)
     }
 
     // nodeID
-    std::vector<std::string> nodeTokens = tokenize_string(tokens[pos], ":,", escapeChar);
-    if (nodeTokens.size() != 3) {
+    std::vector<std::string> NodeId = tokenize_string(tokens[pos], ":,");
+    if (NodeId.size() != 3) {
         errlogPrintf("Invalid node ID '%s'\n", tokens[pos].c_str());
         return "";
     }
-    if (nodeTokens[0] == "str")
+    if (NodeId[0] == "str")
         typ = "s";
-    else if (nodeTokens[0] == "num")
+    else if (NodeId[0] == "num")
         typ = "i";
-    ns = nodeTokens[1];
-    id = nodeTokens[2];
+    ns = NodeId[1];
+    id = NodeId[2];
 
-    std::string result = "@" + subscriptionId + " ns=" + ns + ";" + typ + "=\"" + id + "\"";
+    std::string result = "@" + subscriptionId + " ns=" + ns + ";" + typ + "=" + id + "";
     if (sampling.size())
         result.append(" sampling=" + sampling);
     if (bini.size())
