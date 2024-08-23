@@ -191,7 +191,8 @@ std::vector<std::string> tokenize_string(const std::string &input,
             in_quotes = !in_quotes;
         } else {
             if (!in_quotes && delimiters.find(c) != std::string::npos) {
-                tokens.push_back(token);
+                if (token.length())
+                    tokens.push_back(token);
                 token.clear();
             } else {
                 token += c;
@@ -289,7 +290,8 @@ void linkConvert(initHookState state)
                                     break;
                                 }
                             }
-                            std::string oldLink = dbGetString(&entry);
+                            char * l = dbGetString(&entry);
+                            std::string oldLink = l ? l : "";
                             status = dbPutString(&entry, convertToOpcuaLink(oldLink).c_str());
                         }
                     }
