@@ -280,7 +280,8 @@ void linkConvert(initHookState state)
                 if (!dbIsAlias(&entry)) {
                     status = dbFindField(&entry, "DTYP");
                     if (!status) {
-                        std::string dtyp = dbGetString(&entry);
+                        char * d = dbGetString(&entry);
+                        std::string dtyp = d ? d : "";
                         if (dtyp == "open62541") {
                             status = dbFindField(&entry, "INP");
                             if (status) {
