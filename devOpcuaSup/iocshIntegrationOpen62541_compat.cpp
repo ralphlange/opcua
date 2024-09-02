@@ -191,7 +191,8 @@ std::vector<std::string> tokenize_string(const std::string &input,
             in_quotes = !in_quotes;
         } else {
             if (!in_quotes && delimiters.find(c) != std::string::npos) {
-                tokens.push_back(token);
+                if (token.length())
+                    tokens.push_back(token);
                 token.clear();
             } else {
                 token += c;
@@ -262,6 +263,7 @@ void linkConvert(initHookState state)
     case initHookAfterInitDevSup: {
         DBENTRY entry;
         long status;
+        char *l;
 
         errlogPrintf("OPC UA: open62541_compat mode is converting INP/OUT links\n");
 
@@ -279,7 +281,8 @@ void linkConvert(initHookState state)
                 if (!dbIsAlias(&entry)) {
                     status = dbFindField(&entry, "DTYP");
                     if (!status) {
-                        std::string dtyp = dbGetString(&entry);
+                        l = dbGetString(&entry);
+                        std::string dtyp = l ? l : "";
                         if (dtyp == "open62541") {
                             status = dbFindField(&entry, "INP");
                             if (status) {
@@ -289,7 +292,8 @@ void linkConvert(initHookState state)
                                     break;
                                 }
                             }
-                            std::string oldLink = dbGetString(&entry);
+                            l = dbGetString(&entry);
+                            std::string oldLink = l ? l : "";
                             status = dbPutString(&entry, convertToOpcuaLink(oldLink).c_str());
                         }
                     }
