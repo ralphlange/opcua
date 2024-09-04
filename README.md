@@ -17,18 +17,16 @@ Linux and Windows builds are supported.
 
 ## Status
 
-:warning:
-This module is under development.
-Please contact the author [Ralph Lange](mailto:ralph.lange@gmx.de) for details.
-:warning:
+The module is under development, but releases are stable and robust.
 
 There are two choices for the low-level OPC UA client library:
 
 1.  The commercially available Unified Automation C++ Based OPC UA Client SDK. \
-    This is the original, full implementation.
+    This is the original implementation.
    
-2.  The open source client implementation of the open62541 project. \
-    This integration is still experimental and does not support structured data yet.
+2.  The open source client of the open62541 project SDK. \
+    This integration is relatively new (2024)
+    and hasn't seen much in-production use yet.
 
 ## Prerequisites
 
@@ -40,7 +38,7 @@ There are two choices for the low-level OPC UA client library:
     3.15 (>= 3.15.7) or EPICS 7 (>= 7.0.4).
 
 *   The [gtest module](https://github.com/epics-modules/gtest) if you want
-    to compile and run the Google Test based unit tests.
+    to compile and run the unit tests that are based on Google Test.
 
 ### Using the Unified Automation Client SDK
 
