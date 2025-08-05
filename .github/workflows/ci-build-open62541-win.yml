@@ -63,6 +63,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: true
+    # Install gendef.exe
+    - uses: msys2/setup-msys2@v2
+      with:
+        release: false
+        msystem: mingw64
+        install: >-
+          mingw-w64-x86_64-tools-git
     - name: Download and compile open62541 client
       run: |
         python3 .ci-local/install-open62541.py
@@ -121,6 +128,10 @@ jobs:
         msystem: mingw64
         install: >-
           git
+          make
+          patch
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
           mingw-w64-x86_64-python
         pacboy: openssl:p
     - uses: actions/checkout@v4
