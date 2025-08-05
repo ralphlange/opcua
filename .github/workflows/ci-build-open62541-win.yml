@@ -121,6 +121,7 @@ jobs:
         msystem: mingw64
         install: >-
           git
+          mingw-w64-x86_64-python
         pacboy: openssl:p
     - uses: actions/checkout@v4
       with:
