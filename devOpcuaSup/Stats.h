@@ -132,10 +132,11 @@ public:
         const std::string &name, const std::vector<double> &histogram_buckets = {});
 
     /**
-     * @brief Prints a report of all registered statistics to the given output stream.
+     * @brief Prints a report of all matching statistics to the given output stream.
      * @param os Output stream to print to.
+     * @param pattern Glob pattern to match
      */
-    void report(std::ostream &os) const;
+    void report(std::ostream &os, const std::string &pattern = "*") const;
 
     void reset(const std::string &name);
     void reset_all();
