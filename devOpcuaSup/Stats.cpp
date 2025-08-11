@@ -12,6 +12,8 @@
 
 #include <iomanip>
 
+#include <epicsString.h>
+
 namespace DevOpcua {
 
 StatsCounter::StatsCounter()
@@ -159,20 +161,23 @@ std::shared_ptr<StatsExecTime> StatsManager::getExecutionStats(
 
 }
 
-void StatsManager::report(std::ostream &os) const
+void StatsManager::report(std::ostream &os, const std::string &pattern) const
 {
     Guard G(lock);
     os << "--- Statistics Report ---" << std::endl;
 
     os << "\n-- Counters --" << std::endl;
     for (const auto& pair : counters) {
-        os << pair.first << ": " << pair.second->get() << std::endl;
+        if (epicsStrGlobMatch(pair.first.c_str(), pattern.c_str()))
+            os << pair.first << ": " << pair.second->get() << std::endl;
     }
 
     os << "\n-- Execution Timers --" << std::endl;
-    for (const auto& pair : execTimes) {
-        os << pair.first << ":" << std::endl;
-        pair.second->print(os);
+    for (const auto &pair : execTimes) {
+        if (epicsStrGlobMatch(pair.first.c_str(), pattern.c_str())) {
+            os << pair.first << ":" << std::endl;
+            pair.second->print(os);
+        }
     }
 
     os << "-------------------------" << std::endl;
