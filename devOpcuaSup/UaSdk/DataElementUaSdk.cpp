@@ -30,6 +30,7 @@
 
 #include "ItemUaSdk.h"
 #include "DataElementUaSdk.h"
+#include "Stats.h"
 #include "UpdateQueue.h"
 #include "RecordConnector.h"
 
@@ -234,7 +235,14 @@ DataElementUaSdk::setIncomingData(const UaVariant &value,
                 extensionObject.changeEncoding(UaExtensionObject::Binary);
 
             // Try to get the structure definition from the dictionary
-            UaStructureDefinition definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+            static auto catalog_timer(StatsManager::getInstance().getExecutionStats(
+                "catalog_query", std::vector<double>{100, 200, 500, 1000, 2000, 5000, 10000}));
+
+            UaStructureDefinition definition;
+            {
+                StatsTimer t(catalog_timer);
+                definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+            }
             if (definition.isNull()) {
                 errlogPrintf(
                     "Cannot get a structure definition for item %s element %s (dataTypeId %s "
