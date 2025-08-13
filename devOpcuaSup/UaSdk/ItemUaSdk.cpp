@@ -11,20 +11,21 @@
  *  and example code from the Unified Automation C++ Based OPC UA Client SDK
  */
 
+#include "ItemUaSdk.h"
+
 #include <iostream>
-#include <memory>
 
 #include <uaclientsdk.h>
 #include <uanodeid.h>
 #include <opcua_statuscodes.h>
 
-#include "devOpcua.h"
-#include "RecordConnector.h"
-#include "opcuaItemRecord.h"
-#include "ItemUaSdk.h"
-#include "SubscriptionUaSdk.h"
-#include "SessionUaSdk.h"
 #include "DataElementUaSdk.h"
+#include "RecordConnector.h"
+#include "SessionUaSdk.h"
+#include "Stats.h"
+#include "SubscriptionUaSdk.h"
+#include "devOpcua.h"
+#include "opcuaItemRecord.h"
 
 namespace DevOpcua {
 
@@ -175,6 +176,7 @@ ItemUaSdk::setIncomingData(const OpcUa_DataValue &value, ProcessReason reason, c
     setLastStatus(value.StatusCode);
 
     if (auto pd = dataTree.root().lock()) {
+        TimeMeasurement execTime("dissect");
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
@@ -191,6 +193,8 @@ ItemUaSdk::setIncomingData(const OpcUa_DataValue &value, ProcessReason reason, c
             recConnector->requestRecordProcessing(reason);
         }
     }
+    StatsManager::getInstance().print(std::cerr);
+    StatsManager::getInstance().reset("dissect");
 }
 
 void
