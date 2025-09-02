@@ -31,6 +31,7 @@
 
 #include "ItemUaSdk.h"
 #include "RecordConnector.h"
+#include "Stats.h"
 
 namespace DevOpcua {
 
@@ -162,8 +163,13 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
         value.toExtensionObject(extensionObject);
         if (extensionObject.encoding() == UaExtensionObject::EncodeableObject)
             extensionObject.changeEncoding(UaExtensionObject::Binary);
-
-        UaStructureDefinition definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+        static auto catalog_timer(StatsManager::getInstance().getExecutionStats(
+            "catalog_query", std::vector<double>{100, 200, 500, 1000, 2000, 5000, 10000}));
+        UaStructureDefinition definition;
+        {
+            StatsTimer t(catalog_timer);
+            definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+        }
         if (definition.isNull()) {
             errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
                          "encodingTypeId %s) - check "
