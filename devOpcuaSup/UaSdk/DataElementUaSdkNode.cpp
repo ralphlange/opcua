@@ -283,12 +283,6 @@ DataElementUaSdkNode::setIncomingEvent (ProcessReason reason)
         auto pelem = it.lock();
         pelem->setIncomingEvent(reason);
     }
-    if (reason == ProcessReason::connectionLoss) {
-        elementMap.clear();
-        mapped = false;
-        definition.clear();
-        timesrc = -1;
-    }
 }
 
 void
@@ -297,6 +291,12 @@ DataElementUaSdkNode::setState (const ConnectionStatus state)
     for (const auto &it : elements) {
         auto pelem = it.lock();
         pelem->setState(state);
+    }
+    if (state == ConnectionStatus::initialRead) {
+        elementMap.clear();
+        mapped = false;
+        definition.clear();
+        timesrc = -1;
     }
 }
 
