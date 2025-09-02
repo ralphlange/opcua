@@ -51,7 +51,7 @@ private:
     virtual bool isDirty() const override { return true; }
     virtual void markAsDirty() override {}
 
-    void createMap(const UaStructureDefinition& definition, const std::string *timefrom = nullptr);
+    void createMap(const std::string *timefrom = nullptr);
     void createMap(const UaLocalizedText&);
     void createMap(const UaQualifiedName&);
 
@@ -59,6 +59,7 @@ private:
 
     std::vector<std::weak_ptr<DataElementUaSdk>> elements;
     std::unordered_map<int, std::weak_ptr<DataElementUaSdk>> elementMap;
+    UaStructureDefinition definition; /**< cache of structure definition */
     int timesrc;
     bool mapped;
 };

@@ -71,7 +71,7 @@ DataElementUaSdkNode::show (const int level, const unsigned int indent) const
 }
 
 void
-DataElementUaSdkNode::createMap (const UaStructureDefinition &definition, const std::string *timefrom)
+DataElementUaSdkNode::createMap (const std::string *timefrom)
 {
     if (debug() >= 5)
         std::cout << " ** creating index-to-element map for child elements" << std::endl;
@@ -165,25 +165,23 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
             extensionObject.changeEncoding(UaExtensionObject::Binary);
         static auto catalog_timer(StatsManager::getInstance().getExecutionStats(
             "catalog_query", std::vector<double>{100, 200, 500, 1000, 2000, 5000, 10000}));
-        UaStructureDefinition definition;
-        {
+
+        if (definition.isNull()) {
             StatsTimer t(catalog_timer);
             definition = pitem->structureDefinition(extensionObject.encodingTypeId());
-        }
-        if (definition.isNull()) {
-            errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
-                         "encodingTypeId %s) - check "
-                         "access to type "
-                         "dictionary\n",
-                         pitem->nodeid->toString().toUtf8(),
-                         name.c_str(),
-                         extensionObject.dataTypeId().toString().toUtf8(),
-                         extensionObject.encodingTypeId().toString().toUtf8());
-            return;
+            if (definition.isNull()) {
+                errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
+                             "encodingTypeId %s) - no access to type dictionary?\n",
+                             pitem->nodeid->toString().toUtf8(),
+                             name.c_str(),
+                             extensionObject.dataTypeId().toString().toUtf8(),
+                             extensionObject.encodingTypeId().toString().toUtf8());
+                return;
+            }
         }
 
         if (!mapped)
-            createMap(definition, timefrom);
+            createMap(timefrom);
 
         if (timefrom) {
             if (timesrc >= 0)
@@ -287,8 +285,9 @@ DataElementUaSdkNode::setIncomingEvent (ProcessReason reason)
     }
     if (reason == ProcessReason::connectionLoss) {
         elementMap.clear();
-        timesrc = -1;
         mapped = false;
+        definition.clear();
+        timesrc = -1;
     }
 }
 
@@ -329,7 +328,7 @@ DataElementUaSdkNode::getOutgoingData ()
         }
 
         if (!mapped)
-            createMap(definition);
+            createMap();
 
         if (definition.isUnion()) {
             UaGenericUnionValue genericUnion(extensionObject, definition);
