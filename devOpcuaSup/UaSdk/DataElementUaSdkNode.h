@@ -37,7 +37,7 @@ public:
 
     virtual void show(const int level, const unsigned int indent) const override;
 
-    virtual void setIncomingData(const UaVariant &value,
+    virtual void setIncomingData(UaVariant &value,
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr) override;

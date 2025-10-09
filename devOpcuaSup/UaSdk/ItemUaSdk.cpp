@@ -179,7 +179,9 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
-        pd->setIncomingData(value.Value, reason, timefrom, typeId);
+        // Create the UaVariant wrapper - does a deep copy to remove the constness
+        UaVariant val(value.Value);
+        pd->setIncomingData(val, reason, timefrom, typeId);
     }
 
     if (linkinfo.isItemRecord) {

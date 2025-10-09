@@ -146,7 +146,7 @@ DataElementUaSdkNode::createMap (const UaQualifiedName &)
 }
 
 void
-DataElementUaSdkNode::setIncomingData (const UaVariant &value,
+DataElementUaSdkNode::setIncomingData (UaVariant &value,
                                        ProcessReason reason,
                                        const std::string *timefrom,
                                        const UaNodeId *typeId)

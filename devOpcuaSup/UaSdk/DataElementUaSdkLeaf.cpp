@@ -86,7 +86,7 @@ DataElementUaSdkLeaf::show(const int, const unsigned int indent) const
 }
 
 void
-DataElementUaSdkLeaf::setIncomingData (const UaVariant &value,
+DataElementUaSdkLeaf::setIncomingData (UaVariant &value,
                                        ProcessReason reason,
                                        const std::string *,
                                        const UaNodeId *typeId)
