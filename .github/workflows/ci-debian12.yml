@@ -1,0 +1,20 @@
+
+name: Debian 12 CI
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-debian12.yml'
+      - '.github/workflows/reusable-ci.yml'
+      - 'Dockerfile.debian12'
+      - 'ansible/**'
+      - 'initial_setup.sh'
+      - 'update.sh'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: ./.github/workflows/reusable-ci.yml
+    with:
+      distro: debian12

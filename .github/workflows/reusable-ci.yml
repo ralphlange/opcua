@@ -1,0 +1,50 @@
+
+name: Reusable CI
+
+on:
+  workflow_call:
+    inputs:
+      distro:
+        required: true
+        type: string
+
+jobs:
+  build-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push container image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile.${{ inputs.distro }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}/training-vm-${{ inputs.distro }}:latest
+
+  build-modules:
+    needs: build-container
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository }}/training-vm-${{ inputs.distro }}:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "areaDetector"
+            tags: "areaDetector"
+          - name: "oac-tree"
+            tags: "oac-tree"
+          - name: "phoebus-archiver"
+            tags: "phoebus,archiver"
+          - name: "streamdevice-opcua"
+            tags: "streamdevice,opcua"
+    steps:
+      - name: Build ${{ matrix.name }}
+        run: |
+          ansible-playbook -i "localhost," -c local ansible/playbook.yml --tags ${{ matrix.tags }}
