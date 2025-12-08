@@ -1,0 +1,20 @@
+
+name: Ubuntu 22.04 CI
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-ubuntu2204.yml'
+      - '.github/workflows/reusable-ci.yml'
+      - 'Dockerfile.ubuntu2204'
+      - 'ansible/**'
+      - 'initial_setup.sh'
+      - 'update.sh'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: ./.github/workflows/reusable-ci.yml
+    with:
+      distro: ubuntu2204

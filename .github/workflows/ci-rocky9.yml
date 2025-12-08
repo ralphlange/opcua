@@ -1,0 +1,20 @@
+
+name: Rocky Linux 9 CI
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-rocky9.yml'
+      - '.github/workflows/reusable-ci.yml'
+      - 'Dockerfile.rocky9'
+      - 'ansible/**'
+      - 'initial_setup.sh'
+      - 'update.sh'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: ./.github/workflows/reusable-ci.yml
+    with:
+      distro: rocky9

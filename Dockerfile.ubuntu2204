@@ -1,0 +1,10 @@
+
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y git python3-pip ansible
+RUN pip3 install ansible-lint
+
+COPY . /app
+WORKDIR /app
+
+RUN ansible-playbook -i "localhost," -c local ansible/playbook.yml --tags initial_setup,epics_base,pvxs
