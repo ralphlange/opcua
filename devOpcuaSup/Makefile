@@ -26,6 +26,9 @@ endif
 USR_CXXFLAGS_WIN32 += -DNOMINMAX
 USR_CXXFLAGS += -DEPICS_NO_CALLBACK
 
+# Export the symbols marked DEVOPCUA_API from libopcua (see devOpcuaAPI.h)
+USR_CPPFLAGS += -DBUILDING_DEVOPCUA_API
+
 OPCUA = $(TOP)/devOpcuaSup
 SRC_DIRS += $(OPCUA)
 

@@ -18,6 +18,7 @@
 #include <dbCommon.h>
 
 #include "devOpcua.h"
+#include "devOpcuaAPI.h"
 #include "RecordConnector.h"
 
 namespace DevOpcua {
@@ -37,7 +38,7 @@ bool getYesNo(const char c);
  *
  * @return  tokens in order of appearance as list<string>
  */
-std::list<std::string> splitString(const std::string &str,
+DEVOPCUA_API std::list<std::string> splitString(const std::string &str,
                                    const char delim = defaultElementDelimiter);
 
 std::unique_ptr<linkInfo> parseLink(dbCommon *prec, const DBEntry &ent);

@@ -39,6 +39,7 @@
 #include "OpcuaRegistry.h"
 #include "RequestQueueBatcher.h"
 #include "Session.h"
+#include "devOpcuaAPI.h"
 
 namespace DevOpcua {
 
@@ -84,7 +85,7 @@ public:
      * @param name               session name (used in EPICS record configuration)
      * @param serverUrl          OPC UA server URL
      */
-    SessionUaSdk(const std::string &name, const std::string &serverUrl);
+    DEVOPCUA_API SessionUaSdk(const std::string &name, const std::string &serverUrl);
     ~SessionUaSdk() override;
 
     /**
@@ -227,7 +228,7 @@ public:
      *
      * @return server-side namespace index
      */
-    OpcUa_UInt16 mapNamespaceIndex(const OpcUa_UInt16 nsIndex) const;
+    DEVOPCUA_API OpcUa_UInt16 mapNamespaceIndex(const OpcUa_UInt16 nsIndex) const;
 
     /**
      * @brief EPICS IOC Database initHook function.

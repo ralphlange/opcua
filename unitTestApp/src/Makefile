@@ -5,9 +5,11 @@ include $(TOP)/configure/CONFIG
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #=============================
 
-# Unit tests may use different flags than the library build (e.g., for coverage)
-# To avoid mix-ups, the specific library classes are recompiled here for their tests
-# and the test executables are not linked against libopcua.
+# The unit tests link against libopcua (the classes under test are not recompiled).
+# - Library symbols used by tests must be exported (DEVOPCUA_API, see
+#   devOpcuaSup/devOpcuaAPI.h), otherwise Windows DLL builds fail to link.
+# - Flags that change class layouts (HAS_SECURITY, HAS_XMLPARSER) must match
+#   the library build.
 
 # Windows builds define NOMINMAX (macros min, max clash with numeric_limits<>)
 USR_CXXFLAGS_WIN32 += -DNOMINMAX
@@ -19,8 +21,6 @@ CLIENT_SRC = $(DEVSUP_SRC)/$(CLIENT_SUBDIR)
 
 # Add client specific tests
 SRC_DIRS += $(TESTSRC)/$(CLIENT_SUBDIR)
-# Location of the library classes under test
-SRC_DIRS += $(DEVSUP_SRC) $(CLIENT_SRC)
 USR_INCLUDES += -I$(DEVSUP_SRC) -I$(CLIENT_SRC)
 
 ifeq ($($(CLIENT)_USE_CRYPTO),YES)
@@ -34,10 +34,6 @@ USR_INCLUDES += -I$(MSYSTEM_PREFIX)/include/libxml2
 USR_SYS_LIBS += xml2
 endif
 endif
-
-# Link explicitly against locally compiled library objects
-OPCUA_OBJS += linkParser iocshIntegration $($(CLIENT)_OPCUA_OBJS)
-OPCUA_OBJS += RecordConnector Session Subscription
 
 #==================================================
 # Build tests executables
@@ -60,16 +56,12 @@ GTESTS += RegistryTest
 
 GTESTPROD_HOST += LinkParserTest
 LinkParserTest_SRCS += LinkParserTest.cpp
-LinkParserTest_LIBS += $($(CLIENT)_LIBS) $(EPICS_BASE_IOC_LIBS)
-LinkParserTest_SYS_LIBS_Linux += $(OPCUA_SYS_LIBS_Linux)
-LinkParserTest_OBJS += $(OPCUA_OBJS)
+LinkParserTest_LIBS += opcua
 GTESTS += LinkParserTest
 
 GTESTPROD_HOST += ElementTreeTest
 ElementTreeTest_SRCS += ElementTreeTest.cpp
-ElementTreeTest_LIBS += $($(CLIENT)_LIBS) $(EPICS_BASE_IOC_LIBS)
-ElementTreeTest_SYS_LIBS_Linux += $(OPCUA_SYS_LIBS_Linux)
-ElementTreeTest_OBJS += $(OPCUA_OBJS)
+ElementTreeTest_LIBS += opcua
 GTESTS += ElementTreeTest
 
 #==================================================
@@ -89,6 +81,19 @@ USR_LIBS += Com
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
+
+# Windows DLL builds: the tests link against opcua.dll, which is installed
+# in bin/<arch> - put it next to the test executables (there is no RPATH)
+
+ifeq ($(OS_CLASS)$(SHARED_LIBRARIES),WIN32YES)
+OPCUA_DLL = $(SHRLIB_PREFIX)opcua$(SHRLIB_SUFFIX_BASE)
+
+$(GTESTLISTS) : $(OPCUA_DLL)
+
+$(OPCUA_DLL) : $(INSTALL_SHRLIB)/$(OPCUA_DLL)
+	@$(ECHO) "Installing shared library $@ for the tests"
+	$(INSTALL) -d -m 555 $< $(@D)
+endif
 
 ifdef UASDK
 
