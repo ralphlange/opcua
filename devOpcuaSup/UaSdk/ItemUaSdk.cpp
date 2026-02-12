@@ -14,7 +14,6 @@
 #include "ItemUaSdk.h"
 
 #include <iostream>
-#include <memory>
 
 #include <opcua_statuscodes.h>
 #include <uaclientsdk.h>
@@ -23,6 +22,7 @@
 #include "DataElementUaSdk.h"
 #include "RecordConnector.h"
 #include "SessionUaSdk.h"
+#include "Stats.h"
 #include "SubscriptionUaSdk.h"
 #include "devOpcua.h"
 #include "opcuaItemRecord.h"
@@ -178,6 +178,7 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
     setLastStatus(value.StatusCode);
 
     if (auto pd = dataTree.root().lock()) {
+        TimeMeasurement execTime("dissect");
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
@@ -193,6 +194,8 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
             recConnector->requestRecordProcessing(reason);
         }
     }
+    StatsManager::getInstance().print(std::cerr);
+    StatsManager::getInstance().reset("dissect");
 }
 
 void
