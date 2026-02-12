@@ -80,6 +80,15 @@ ItemUaSdk::rebuildNodeId ()
     registered = false;
 }
 
+void ItemUaSdk::requestWrite()
+{
+    static auto writeCounter(StatsManager::getInstance().getCounter(
+        std::string(recConnector->getRecordName()).append("/writeCount")));
+
+    writeCounter->increment();
+    session->requestWrite(*this);
+}
+
 void
 ItemUaSdk::requestWriteIfDirty ()
 {
@@ -153,9 +162,18 @@ ItemUaSdk::uaToEpicsTime (const UaDateTime &dt, const OpcUa_UInt16 pico10)
     return epicsTime(ts);
 }
 
-void
-ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, const UaNodeId *typeId)
+void ItemUaSdk::setIncomingData(const OpcUa_DataValue &value,
+                                ProcessReason reason,
+                                const UaNodeId *typeId)
 {
+    static auto newDataCounter(StatsManager::getInstance().getCounter(
+        std::string(recConnector->getRecordName()).append("/newDataCount")));
+    static auto readCounter(StatsManager::getInstance().getCounter(
+        std::string(recConnector->getRecordName()).append("/readCount")));
+    static auto dissectTimer(StatsManager::getInstance().getExecutionStats(
+        std::string(recConnector->getRecordName()).append("/dissectTimer"),
+        std::vector<double>{100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000}));
+
     tsClient = epicsTime::getCurrent();
     if (OpcUa_IsNotBad(value.StatusCode)) {
         tsSource = uaToEpicsTime(UaDateTime(value.SourceTimestamp), value.SourcePicoseconds);
@@ -177,11 +195,13 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
 
     setLastStatus(value.StatusCode);
 
-    static auto dissectTimer(StatsManager::getInstance().getExecutionStats(
-        std::string(recConnector->getRecordName()).append("/dissectTimer"), std::vector<double>{100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000}));
-
     if (auto pd = dataTree.root().lock()) {
+        if (reason == ProcessReason::incomingData)
+            newDataCounter->increment();
+        else if (reason == ProcessReason::readComplete)
+            readCounter->increment();
         StatsTimer t(dissectTimer);
+
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
@@ -189,7 +209,8 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
     }
 
     if (linkinfo.isItemRecord) {
-        if (recConnector->state() == ConnectionStatus::initialRead && reason == ProcessReason::readComplete
+        if (recConnector->state() == ConnectionStatus::initialRead
+            && reason == ProcessReason::readComplete
             && recConnector->bini() == LinkOptionBini::write) {
             recConnector->setState(ConnectionStatus::initialWrite);
             recConnector->requestRecordProcessing(ProcessReason::writeRequest);

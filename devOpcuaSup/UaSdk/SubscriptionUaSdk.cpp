@@ -34,6 +34,7 @@
 #include "RecordConnector.h"
 #include "DataElementUaSdk.h"
 #include "Registry.h"
+#include "Stats.h"
 #include "devOpcua.h"
 
 namespace DevOpcua {
@@ -275,6 +276,9 @@ SubscriptionUaSdk::dataChange (OpcUa_UInt32 clientSubscriptionHandle,
                                const UaDiagnosticInfos&   diagnosticInfos)
 {
     OpcUa_UInt32 i;
+    static auto counter(StatsManager::getInstance().getCounter(std::string(this->name).append("/dataChangeCount")));
+
+    counter->increment();
 
     if (debug)
         std::cout << "Subscription " << name.c_str()

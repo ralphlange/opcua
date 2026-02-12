@@ -70,7 +70,7 @@ public:
     /**
      * @brief Request beginWrite service. See DevOpcua::Item::requestWrite
      */
-    virtual void requestWrite() override { session->requestWrite(*this); }
+    virtual void requestWrite() override;
 
     /**
      * @brief Schedule a write request if item data is "dirty".

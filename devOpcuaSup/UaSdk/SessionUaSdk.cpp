@@ -45,13 +45,14 @@
 #include <errlog.h>
 
 #define epicsExportSharedSymbols
-#include "Session.h"
-#include "RecordConnector.h"
-#include "linkParser.h"
-#include "RequestQueueBatcher.h"
-#include "SessionUaSdk.h"
-#include "SubscriptionUaSdk.h"
 #include "ItemUaSdk.h"
+#include "RecordConnector.h"
+#include "RequestQueueBatcher.h"
+#include "Session.h"
+#include "SessionUaSdk.h"
+#include "Stats.h"
+#include "SubscriptionUaSdk.h"
+#include "linkParser.h"
 
 namespace DevOpcua {
 
@@ -402,6 +403,8 @@ SessionUaSdk::processRequests(std::vector<std::shared_ptr<ReadRequest>> &batch)
     std::unique_ptr<std::vector<ItemUaSdk *>> itemsToRead(new std::vector<ItemUaSdk *>);
     ServiceSettings serviceSettings;
     OpcUa_UInt32 id = getTransactionId();
+    static auto readCounter(
+        StatsManager::getInstance().getCounter(std::string(getName()).append("/readCount")));
 
     nodesToRead.create(static_cast<OpcUa_UInt32>(batch.size() * no_of_properties_read));
     OpcUa_UInt32 i = 0;
@@ -417,12 +420,13 @@ SessionUaSdk::processRequests(std::vector<std::shared_ptr<ReadRequest>> &batch)
 
     if (isConnected()) {
         Guard G(opslock);
+        readCounter->increment(nodesToRead.length());
 
-        status = puasession->beginRead(serviceSettings,                // Use default settings
-                                       0,                              // Max age
-                                       OpcUa_TimestampsToReturn_Both,  // Time stamps to return
-                                       nodesToRead,                    // Array of nodes to read
-                                       id);                            // Transaction id
+        status = puasession->beginRead(serviceSettings,               // Use default settings
+                                       0,                             // Max age
+                                       OpcUa_TimestampsToReturn_Both, // Time stamps to return
+                                       nodesToRead,                   // Array of nodes to read
+                                       id);                           // Transaction id
 
         if (status.isBad()) {
             errlogPrintf(
@@ -464,6 +468,8 @@ SessionUaSdk::processRequests(std::vector<std::shared_ptr<WriteRequest>> &batch)
     std::unique_ptr<std::vector<ItemUaSdk *>> itemsToWrite(new std::vector<ItemUaSdk *>);
     ServiceSettings serviceSettings;
     OpcUa_UInt32 id = getTransactionId();
+    static auto writeCounter(
+        StatsManager::getInstance().getCounter(std::string(getName()).append("/writeCount")));
 
     nodesToWrite.create(static_cast<OpcUa_UInt32>(batch.size()));
     OpcUa_UInt32 i = 0;
@@ -477,6 +483,8 @@ SessionUaSdk::processRequests(std::vector<std::shared_ptr<WriteRequest>> &batch)
 
     if (isConnected()) {
         Guard G(opslock);
+        writeCounter->increment();
+
         status = puasession->beginWrite(serviceSettings, // Use default settings
                                         nodesToWrite,    // Array of nodes/data to write
                                         id);             // Transaction id

@@ -158,6 +158,11 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
                                        const std::string *timefrom,
                                        const UaNodeId *typeId)
 {
+    static auto catalogTimer(
+        StatsManager::getInstance()
+            .getExecutionStats(std::string(pitem->session->getName()).append("/catalogQueryTimer"),
+                               std::vector<double>{10, 20, 50, 100, 200, 500, 1000}));
+
     incomingData = value;
 
     if (debug() >= 5)
@@ -171,11 +176,8 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
         if (extensionObject.encoding() == UaExtensionObject::EncodeableObject)
             extensionObject.changeEncoding(UaExtensionObject::Binary);
 
-        static auto catalog_timer(StatsManager::getInstance().getExecutionStats(
-            std::string(pitem->session->getName()).append("/catalogQueryTimer"), std::vector<double>{100, 200, 500, 1000, 2000, 5000, 10000}));
-
         if (definition.isNull()) {
-            StatsTimer t(catalog_timer);
+            StatsTimer t(catalogTimer);
             definition = pitem->structureDefinition(extensionObject.encodingTypeId());
             if (definition.isNull()) {
                 errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
