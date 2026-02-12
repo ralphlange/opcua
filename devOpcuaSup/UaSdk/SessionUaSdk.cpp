@@ -167,6 +167,8 @@ SessionUaSdk::SessionUaSdk(const std::string &name,
     , readNodesMax(0)
     , readTimeoutMin(0)
     , readTimeoutMax(0)
+    , catalogTimer(StatsManager::getInstance().getExecutionStats(
+          name + "/catalogQueryTimer", std::vector<double>{10, 20, 50, 100, 200, 500, 1000}))
 {
     //TODO: allow overriding by env variable
     connectInfo.sApplicationName = "EPICS IOC";
@@ -1398,6 +1400,15 @@ void
 SessionUaSdk::initHook (initHookState state)
 {
     switch (state) {
+    case initHookAfterInitDatabase:
+    {
+        // All records are initialized (record connectors set), no processing yet
+        for (auto &it : sessions) {
+            for (auto &item : it.second->items)
+                item->initStats();
+        }
+        break;
+    }
     case initHookAfterIocRunning:
     {
         errlogPrintf("OPC UA: Autoconnecting sessions\n");

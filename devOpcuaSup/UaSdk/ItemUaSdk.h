@@ -27,6 +27,7 @@
 #include "devOpcua.h"
 #include "ElementTree.h"
 #include "SessionUaSdk.h"
+#include "Stats.h"
 
 namespace DevOpcua {
 
@@ -61,6 +62,14 @@ public:
      * @param info  configuration as parsed from the EPICS database
      */
     void rebuildNodeId();
+
+    /**
+     * @brief Create the statistics counters and timers for this item.
+     *
+     * Must be called after the record connector has been set
+     * and before any data is read or written.
+     */
+    void initStats();
 
     /**
      * @brief Request beginRead service. See DevOpcua::Item::requestRead
@@ -235,6 +244,7 @@ private:
     epicsTime tsServer;                    /**< server time stamp */
     epicsTime tsSource;                    /**< source time stamp */
     epicsTime tsData;                      /**< data time stamp */
+    std::shared_ptr<StatsExecTime> dissectTimer;  /**< stats: time to dissect incoming data */
 };
 
 } // namespace DevOpcua

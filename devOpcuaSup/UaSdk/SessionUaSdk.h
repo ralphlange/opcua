@@ -39,6 +39,7 @@
 #include "OpcuaRegistry.h"
 #include "RequestQueueBatcher.h"
 #include "Session.h"
+#include "Stats.h"
 #include "devOpcuaAPI.h"
 
 namespace DevOpcua {
@@ -137,7 +138,10 @@ public:
      * @return structure definition
      */
     UaStructureDefinition structureDefinition(const UaNodeId &dataTypeId)
-    { return puasession->structureDefinition(dataTypeId); }
+    {
+        StatsTimer t(catalogTimer);
+        return puasession->structureDefinition(dataTypeId);
+    }
 
     /**
      * @brief Request a beginRead service for an item
@@ -350,6 +354,8 @@ private:
     unsigned int readNodesMax;                                /**< max number of nodes per read request */
     unsigned int readTimeoutMin;                              /**< timeout after read request batch of 1 node [ms] */
     unsigned int readTimeoutMax;                              /**< timeout after read request batch of NodesMax nodes [ms] */
+
+    std::shared_ptr<StatsExecTime> catalogTimer;              /**< stats: structure definition lookups */
 };
 
 } // namespace DevOpcua
