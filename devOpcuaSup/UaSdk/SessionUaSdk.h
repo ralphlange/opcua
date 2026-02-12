@@ -355,6 +355,8 @@ private:
     unsigned int readTimeoutMin;                              /**< timeout after read request batch of 1 node [ms] */
     unsigned int readTimeoutMax;                              /**< timeout after read request batch of NodesMax nodes [ms] */
 
+    std::shared_ptr<StatsCounter> readCounter;                /**< stats: nodes read */
+    std::shared_ptr<StatsCounter> writeCounter;               /**< stats: write requests */
     std::shared_ptr<StatsExecTime> catalogTimer;              /**< stats: structure definition lookups */
 };
 

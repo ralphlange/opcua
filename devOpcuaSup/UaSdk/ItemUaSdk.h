@@ -79,7 +79,7 @@ public:
     /**
      * @brief Request beginWrite service. See DevOpcua::Item::requestWrite
      */
-    virtual void requestWrite() override { session->requestWrite(*this); }
+    virtual void requestWrite() override;
 
     /**
      * @brief Schedule a write request if item data is "dirty".
@@ -244,6 +244,9 @@ private:
     epicsTime tsServer;                    /**< server time stamp */
     epicsTime tsSource;                    /**< source time stamp */
     epicsTime tsData;                      /**< data time stamp */
+    std::shared_ptr<StatsCounter> newDataCounter; /**< stats: incoming data updates */
+    std::shared_ptr<StatsCounter> readCounter;    /**< stats: completed reads */
+    std::shared_ptr<StatsCounter> writeCounter;   /**< stats: write requests */
     std::shared_ptr<StatsExecTime> dissectTimer;  /**< stats: time to dissect incoming data */
 };
 

@@ -33,6 +33,7 @@
 #include "DataElementUaSdk.h"
 #include "OpcuaRegistry.h"
 #include "RecordConnector.h"
+#include "Stats.h"
 #include "SubscriptionUaSdk.h"
 #include "devOpcua.h"
 
@@ -49,6 +50,7 @@ SubscriptionUaSdk::SubscriptionUaSdk (const std::string &name, SessionUaSdk *ses
     , psessionuasdk(session)
     //TODO: add runtime support for subscription enable/disable
     , enable(true)
+    , dataChangeCounter(StatsManager::getInstance().getCounter(name + "/dataChangeCount"))
 {
     // keep the default timeout
     double deftimeout = subscriptionSettings.publishingInterval * subscriptionSettings.lifetimeCount;
@@ -275,6 +277,7 @@ SubscriptionUaSdk::dataChange (OpcUa_UInt32 clientSubscriptionHandle,
                                const UaDiagnosticInfos&   diagnosticInfos)
 {
     OpcUa_UInt32 i;
+    dataChangeCounter->increment();
 
     if (debug)
         std::cout << "Subscription " << name.c_str()

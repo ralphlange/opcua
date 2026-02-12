@@ -86,9 +86,18 @@ ItemUaSdk::initStats ()
     const std::string prefix(recConnector->getRecordName());
     StatsManager &stats = StatsManager::getInstance();
 
+    newDataCounter = stats.getCounter(prefix + "/newDataCount");
+    readCounter = stats.getCounter(prefix + "/readCount");
+    writeCounter = stats.getCounter(prefix + "/writeCount");
     dissectTimer = stats.getExecutionStats(
         prefix + "/dissectTimer",
         std::vector<double>{100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000});
+}
+
+void ItemUaSdk::requestWrite()
+{
+    writeCounter->increment();
+    session->requestWrite(*this);
 }
 
 void
@@ -164,8 +173,9 @@ ItemUaSdk::uaToEpicsTime (const UaDateTime &dt, const OpcUa_UInt16 pico10)
     return epicsTime(ts);
 }
 
-void
-ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, const UaNodeId *typeId)
+void ItemUaSdk::setIncomingData(const OpcUa_DataValue &value,
+                                ProcessReason reason,
+                                const UaNodeId *typeId)
 {
     tsClient = epicsTime::getCurrent();
     if (OpcUa_IsNotBad(value.StatusCode)) {
@@ -189,7 +199,12 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
     setLastStatus(value.StatusCode);
 
     if (auto pd = dataTree.root().lock()) {
+        if (reason == ProcessReason::incomingData)
+            newDataCounter->increment();
+        else if (reason == ProcessReason::readComplete)
+            readCounter->increment();
         StatsTimer t(dissectTimer);
+
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
@@ -197,7 +212,8 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
     }
 
     if (linkinfo.isItemRecord) {
-        if (recConnector->state() == ConnectionStatus::initialRead && reason == ProcessReason::readComplete
+        if (recConnector->state() == ConnectionStatus::initialRead
+            && reason == ProcessReason::readComplete
             && recConnector->bini() == LinkOptionBini::write) {
             recConnector->setState(ConnectionStatus::initialWrite);
             recConnector->requestRecordProcessing(ProcessReason::writeRequest);

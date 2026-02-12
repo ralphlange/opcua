@@ -190,6 +190,7 @@ private:
     SubscriptionSettings subscriptionSettings;  /**< subscription specific settings */
     SubscriptionSettings requestedSettings;     /**< requested subscription specific settings */
     bool enable;                                /**< subscription enable flag */
+    std::shared_ptr<StatsCounter> dataChangeCounter;           /**< stats: dataChange callbacks */
 };
 
 } // namespace DevOpcua
