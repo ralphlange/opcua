@@ -59,6 +59,7 @@ opcua_SRCS += iocshIntegration.cpp
 opcua_SRCS += RecordConnector.cpp
 opcua_SRCS += linkParser.cpp
 opcua_SRCS += opcuaItemRecord.cpp
+opcua_SRCS += Stats.cpp
 
 opcua_LIBS += $(EPICS_BASE_IOC_LIBS)
 
