@@ -177,8 +177,11 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
 
     setLastStatus(value.StatusCode);
 
+    static auto dissectTimer(StatsManager::getInstance().getExecutionStats(
+        std::string(recConnector->getRecordName()).append("/dissectTimer"), std::vector<double>{100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000}));
+
     if (auto pd = dataTree.root().lock()) {
-        TimeMeasurement execTime("dissect");
+        StatsTimer t(dissectTimer);
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
@@ -194,8 +197,6 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
             recConnector->requestRecordProcessing(reason);
         }
     }
-    StatsManager::getInstance().print(std::cerr);
-    StatsManager::getInstance().reset("dissect");
 }
 
 void

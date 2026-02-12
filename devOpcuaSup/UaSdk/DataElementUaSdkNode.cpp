@@ -30,6 +30,7 @@
 #include <errlog.h>
 
 #include "ItemUaSdk.h"
+#include "Stats.h"
 #include "RecordConnector.h"
 
 namespace DevOpcua {
@@ -170,16 +171,24 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
         if (extensionObject.encoding() == UaExtensionObject::EncodeableObject)
             extensionObject.changeEncoding(UaExtensionObject::Binary);
 
-        UaStructureDefinition definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+        static auto catalog_timer(StatsManager::getInstance().getExecutionStats(
+            std::string(pitem->session->getName()).append("/catalogQueryTimer"), std::vector<double>{100, 200, 500, 1000, 2000, 5000, 10000}));
+
+        UaStructureDefinition definition;
+        {
+            StatsTimer t(catalog_timer);
+            definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+        }
         if (definition.isNull()) {
-            errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
-                         "encodingTypeId %s) - check "
-                         "access to type "
-                         "dictionary\n",
-                         pitem->nodeid->toString().toUtf8(),
-                         name.c_str(),
-                         extensionObject.dataTypeId().toString().toUtf8(),
-                         extensionObject.encodingTypeId().toString().toUtf8());
+            errlogPrintf(
+                "Cannot get a structure definition for item %s element %s (dataTypeId %s "
+                "encodingTypeId %s) - check "
+                "access to type "
+                "dictionary\n",
+                pitem->nodeid->toString().toUtf8(),
+                name.c_str(),
+                extensionObject.dataTypeId().toString().toUtf8(),
+                extensionObject.encodingTypeId().toString().toUtf8());
             return;
         }
 
