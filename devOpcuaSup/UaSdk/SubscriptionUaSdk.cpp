@@ -51,6 +51,7 @@ SubscriptionUaSdk::SubscriptionUaSdk (const std::string &name, SessionUaSdk *ses
     //TODO: add runtime support for subscription enable/disable
     , enable(true)
     , dataChangeCounter(StatsManager::getInstance().getCounter(name + "/dataChangeCount"))
+    , notificationsMissingCounter(StatsManager::getInstance().getCounter(name + "/notificationsMissingCount"))
 {
     // keep the default timeout
     double deftimeout = subscriptionSettings.publishingInterval * subscriptionSettings.lifetimeCount;
@@ -304,5 +305,14 @@ void
 SubscriptionUaSdk::newEvents (OpcUa_UInt32 clientSubscriptionHandle,
                               UaEventFieldLists& eventFieldList)
 {}
+
+void SubscriptionUaSdk::notificationsMissing(OpcUa_UInt32 clientSubscriptionHandle,
+                                             OpcUa_UInt32 previousSequenceNumber,
+                                             OpcUa_UInt32 newSequenceNumber)
+{
+    int steps = newSequenceNumber - previousSequenceNumber;
+    if (steps > 1)
+        notificationsMissingCounter->increment(steps - 1);
+}
 
 } // namespace DevOpcua

@@ -180,6 +180,9 @@ public:
             OpcUa_UInt32                clientSubscriptionHandle,
             UaEventFieldLists&          eventFieldList
             ) override;
+    virtual void notificationsMissing(OpcUa_UInt32 clientSubscriptionHandle,
+                                      OpcUa_UInt32 previousSequenceNumber,
+                                      OpcUa_UInt32 newSequenceNumber) override;
 
 private:
     static Registry<SubscriptionUaSdk> subscriptions; /**< subscription management */
@@ -191,6 +194,7 @@ private:
     SubscriptionSettings requestedSettings;     /**< requested subscription specific settings */
     bool enable;                                /**< subscription enable flag */
     std::shared_ptr<StatsCounter> dataChangeCounter;           /**< stats: dataChange callbacks */
+    std::shared_ptr<StatsCounter> notificationsMissingCounter; /**< stats: missed notifications */
 };
 
 } // namespace DevOpcua
