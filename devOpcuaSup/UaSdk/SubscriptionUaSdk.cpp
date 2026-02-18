@@ -306,4 +306,15 @@ SubscriptionUaSdk::newEvents (OpcUa_UInt32 clientSubscriptionHandle,
                               UaEventFieldLists& eventFieldList)
 {}
 
+void SubscriptionUaSdk::notificationsMissing(OpcUa_UInt32 clientSubscriptionHandle,
+                                             OpcUa_UInt32 previousSequenceNumber,
+                                             OpcUa_UInt32 newSequenceNumber)
+{
+    static auto notificationsMissingCount(StatsManager::getInstance().getCounter(
+        std::string(this->name).append("/notificationsMissingCount")));
+    int steps = newSequenceNumber - previousSequenceNumber;
+    if (steps > 1)
+        notificationsMissingCount->increment(steps - 1);
+}
+
 } // namespace DevOpcua
