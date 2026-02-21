@@ -233,6 +233,7 @@ private:
     epicsTime tsServer;                    /**< server time stamp */
     epicsTime tsSource;                    /**< source time stamp */
     epicsTime tsData;                      /**< data time stamp */
+    UaVariant incomingData;                /**< cache of latest incoming value */
 };
 
 } // namespace DevOpcua

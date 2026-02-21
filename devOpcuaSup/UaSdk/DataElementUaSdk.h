@@ -107,7 +107,24 @@ public:
      * @param timefrom  name of element to read item timestamp from
      * @param typeId  data type of the data element
      */
-    virtual void setIncomingData(UaVariant &value,
+    virtual void setIncomingData(const UaVariant &value,
+                                 ProcessReason reason,
+                                 const std::string *timefrom = nullptr,
+                                 const UaNodeId *typeId = nullptr)
+        = 0;
+
+    /**
+     * @brief Push an incoming data value (structured) into the DataElement.
+     *
+     * Called from the OPC UA client worker thread when new structured data
+     * is received from the OPC UA session.
+     *
+     * @param value  new value for this data element
+     * @param reason  reason for this value update
+     * @param timefrom  name of element to read item timestamp from
+     * @param typeId  data type of the data element
+     */
+    virtual void setIncomingData(const UaExtensionObject &value,
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr)
@@ -129,14 +146,26 @@ public:
     virtual void setState(const ConnectionStatus state) = 0;
 
     /**
-     * @brief Get the outgoing data value from the DataElement.
+     * @brief Assemble the outgoing data value for the DataElement.
      *
      * Called from the OPC UA client worker thread when data is being
      * assembled in OPC UA session for sending.
      *
-     * @return  reference to outgoing data
+     * @param[in]  base  latest incoming value (base for assembly)
+     * @param[out] out   resulting outgoing value
      */
-    virtual const UaVariant &getOutgoingData() = 0;
+    virtual void fillOutgoingData(const UaVariant &base, UaVariant &out) = 0;
+
+    /**
+     * @brief Assemble the outgoing data value (structured) for the DataElement.
+     *
+     * Called from the OPC UA client worker thread when structured data is
+     * being assembled in OPC UA session for sending.
+     *
+     * @param[in]  base  latest incoming value (base for assembly)
+     * @param[out] out   resulting outgoing value
+     */
+    virtual void fillOutgoingData(const UaExtensionObject &base, UaExtensionObject &out) = 0;
 
     /**
      * @brief Clear (discard) the current outgoing data.
@@ -172,7 +201,6 @@ protected:
     ItemUaSdk *pitem;                             /**< corresponding item */
     std::shared_ptr<DataElementUaSdk> parent;     /**< parent */
 
-    UaVariant incomingData;   /**< cache of latest incoming value */
     epicsMutex &outgoingLock; /**< data lock for outgoing value */
     UaVariant outgoingData;   /**< cache of latest outgoing value */
     bool isdirty;             /**< outgoing value has been (or needs to be) updated */

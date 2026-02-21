@@ -37,13 +37,18 @@ public:
 
     virtual void show(const int level, const unsigned int indent) const override;
 
-    virtual void setIncomingData(UaVariant &value,
+    virtual void setIncomingData(const UaVariant &value,
+                                 ProcessReason reason,
+                                 const std::string *timefrom = nullptr,
+                                 const UaNodeId *typeId = nullptr) override;
+    virtual void setIncomingData(const UaExtensionObject &value,
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr) override;
     virtual void setIncomingEvent(ProcessReason reason) override;
     virtual void setState(const ConnectionStatus state) override;
-    virtual const UaVariant &getOutgoingData() override;
+    virtual void fillOutgoingData(const UaVariant &base, UaVariant &out) override;
+    virtual void fillOutgoingData(const UaExtensionObject &base, UaExtensionObject &out) override;
     virtual void clearOutgoingData() override;
     virtual void requestRecordProcessing(const ProcessReason reason) const override;
 

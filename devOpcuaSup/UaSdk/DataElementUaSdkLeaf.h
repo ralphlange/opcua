@@ -264,13 +264,18 @@ public:
 
     virtual void show(const int level, const unsigned int indent) const override;
 
-    virtual void setIncomingData(UaVariant &value,
+    virtual void setIncomingData(const UaVariant &value,
+                                 ProcessReason reason,
+                                 const std::string *timefrom = nullptr,
+                                 const UaNodeId *typeId = nullptr) override;
+    virtual void setIncomingData(const UaExtensionObject &value,
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr) override;
     virtual void setIncomingEvent(ProcessReason reason) override;
     virtual void setState(const ConnectionStatus state) override;
-    virtual const UaVariant &getOutgoingData() override;
+    virtual void fillOutgoingData(const UaVariant &base, UaVariant &out) override;
+    virtual void fillOutgoingData(const UaExtensionObject &base, UaExtensionObject &out) override;
     virtual void clearOutgoingData() override;
     virtual void requestRecordProcessing(const ProcessReason reason) const override;
     virtual int debug() const override;
@@ -870,7 +875,7 @@ private:
     {
         long ret = 1;
 
-        switch (incomingData.type()) {
+        switch (dataType) {
         case OpcUaType_Boolean: { // Scope of Guard G
             Guard G(outgoingLock);
             outgoingData.setBoolean(value != 0);
@@ -969,7 +974,7 @@ private:
             errlogPrintf("%s : unsupported conversion from %s to %s for outgoing data\n",
                          prec->name,
                          epicsTypeString(value),
-                         variantTypeString(incomingData.type()));
+                         variantTypeString(dataType));
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
         }
         if (ret != 0) {
@@ -994,14 +999,10 @@ private:
     {
         long ret = 0;
 
-        if (!incomingData.isArray()) {
-            errlogPrintf("%s : OPC UA data type is not an array\n", prec->name);
-            (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
-            ret = 1;
-        } else if (incomingData.type() != targetType) {
+        if (dataType != targetType) {
             errlogPrintf("%s : OPC UA data type (%s) does not match expected type (%s) for EPICS array (%s)\n",
                          prec->name,
-                         variantTypeString(incomingData.type()),
+                         variantTypeString(dataType),
                          variantTypeString(targetType),
                          epicsTypeString(*value));
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
@@ -1023,6 +1024,9 @@ private:
     }
 
     int timesrc;
+    OpcUa_BuiltInType dataType;             /**< OPC UA data type of this element */
+    bool isArray;                           /**< true if this element is an array */
+    UaNodeId encodingTypeId;                /**< encoding type ID (if structured) */
     UpdateQueue<UpdateUaSdk> incomingQueue; /**< queue of incoming values */
 };
 

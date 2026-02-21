@@ -132,7 +132,9 @@ ItemUaSdk::copyAndClearOutgoingData (_OpcUa_WriteValue &wvalue)
 {
     Guard G(dataTreeWriteLock);
     if (auto pd = dataTree.root().lock()) {
-        pd->getOutgoingData().copyTo(&wvalue.Value.Value);
+        UaVariant out;
+        pd->fillOutgoingData(incomingData, out);
+        out.copyTo(&wvalue.Value.Value);
         pd->clearOutgoingData();
     }
     dataTreeDirty = false;
@@ -174,14 +176,21 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
     static auto dissect_timer(StatsManager::getInstance().getExecutionStats(
         "dissect", std::vector<double>{100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000}));
 
+    incomingData = value.Value;
+
     if (auto pd = dataTree.root().lock()) {
         StatsTimer t(dissect_timer);
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
-        // Create the UaVariant wrapper - does a deep copy to remove the constness
-        UaVariant val(value.Value);
-        pd->setIncomingData(val, reason, timefrom, typeId);
+
+        if (incomingData.type() == OpcUaType_ExtensionObject && !incomingData.isArray()) {
+            UaExtensionObject eo;
+            incomingData.toExtensionObject(eo);
+            pd->setIncomingData(eo, reason, timefrom, typeId);
+        } else {
+            pd->setIncomingData(incomingData, reason, timefrom, typeId);
+        }
     }
 
     if (linkinfo.isItemRecord) {
