@@ -1014,7 +1014,7 @@ DataElementOpen62541Leaf::writeScalar (const char *value, epicsUInt32 len, dbCom
                     }
                 if (ret != 0 && end != value)
                     for (const auto &it: *enumChoices)
-                        if (l == it.first) {
+                        if (l == static_cast<long>(it.first)) {
                             ret = 0;
                             break;
                         }

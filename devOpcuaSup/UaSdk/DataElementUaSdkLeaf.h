@@ -658,8 +658,12 @@ private:
     virtual bool isDirty () const override { return isdirty; }
     virtual void markAsDirty () override
     {
-        isdirty = true;
-        pitem->markAsDirty();
+        if (!isdirty) {
+            isdirty = true;
+            if (parent)
+                parent->markAsDirty();
+            pitem->markAsDirty();
+        }
     }
 
     void dbgWriteScalar() const;

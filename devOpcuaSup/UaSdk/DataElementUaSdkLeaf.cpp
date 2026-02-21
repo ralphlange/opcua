@@ -143,7 +143,8 @@ DataElementUaSdkLeaf::setIncomingData (const UaExtensionObject &value,
                                        const std::string *timefrom,
                                        const UaNodeId *typeId)
 {
-    UaVariant val(value);
+    UaVariant val;
+    val.setExtensionObject(const_cast<UaExtensionObject&>(value), OpcUa_False);
     setIncomingData(val, reason, timefrom, typeId);
 }
 
@@ -187,6 +188,11 @@ DataElementUaSdkLeaf::fillOutgoingData (const UaVariant &base, UaVariant &out)
                     OpcUa_UInt16 ns;
                     outgoingData.toUInt16(ns);
                     qn.setNamespaceIndex(ns);
+                    out.setQualifiedName(qn);
+                } else if (outgoingData.type() == OpcUaType_String) {
+                    UaQualifiedName qn;
+                    base.toQualifiedName(qn);
+                    qn.setName(outgoingData.toString());
                     out.setQualifiedName(qn);
                 } else {
                     out = outgoingData;

@@ -37,7 +37,7 @@ endif
 
 # Link explicitly against locally compiled library objects
 OPCUA_OBJS += linkParser iocshIntegration $($(CLIENT)_OPCUA_OBJS)
-OPCUA_OBJS += RecordConnector Session Subscription
+OPCUA_OBJS += RecordConnector Session Subscription Stats
 
 #==================================================
 # Build tests executables

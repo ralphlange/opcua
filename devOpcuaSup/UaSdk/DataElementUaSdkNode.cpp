@@ -363,19 +363,20 @@ DataElementUaSdkNode::fillOutgoingData (const UaVariant &base, UaVariant &out)
                     memberBase.setString(localizedText.text());
                     break;
                 }
-                pelem->fillOutgoingData(memberBase, memberOut);
-                if (pelem->isdirty) {
-                    switch (it.first) {
-                    case 0:
-                        localizedText.setLocale(memberOut.toString());
-                        break;
-                    case 1:
-                        localizedText.setText(memberOut.toString());
-                        break;
+                if (pelem->isDirty()) {
+                    pelem->fillOutgoingData(memberBase, memberOut);
+                    if (pelem->isDirty()) {
+                        switch (it.first) {
+                        case 0:
+                            localizedText.setLocale(memberOut.toString());
+                            break;
+                        case 1:
+                            localizedText.setText(memberOut.toString());
+                            break;
+                        }
+                        isdirty = true;
+                        updated = true;
                     }
-                    pelem->isdirty = false;
-                    isdirty = true;
-                    updated = true;
                 }
                 if (debug() >= 4)
                     std::cout << "Data from child element " << pelem->name
@@ -407,21 +408,22 @@ DataElementUaSdkNode::fillOutgoingData (const UaVariant &base, UaVariant &out)
                     memberBase.setString(qualifiedName.name());
                     break;
                 }
-                pelem->fillOutgoingData(memberBase, memberOut);
-                if (pelem->isdirty) {
-                    OpcUa_UInt16 ns;
-                    switch (it.first) {
-                    case 0:
-                        if (memberOut.toUInt16(ns) == OpcUa_Good)
-                            qualifiedName.setNamespaceIndex(ns);
-                        break;
-                    case 1:
-                        qualifiedName.setQualifiedName(memberOut.toString(), qualifiedName.namespaceIndex());
-                        break;
+                if (pelem->isDirty()) {
+                    pelem->fillOutgoingData(memberBase, memberOut);
+                    if (pelem->isDirty()) {
+                        OpcUa_UInt16 ns;
+                        switch (it.first) {
+                        case 0:
+                            if (memberOut.toUInt16(ns) == OpcUa_Good)
+                                qualifiedName.setNamespaceIndex(ns);
+                            break;
+                        case 1:
+                            qualifiedName.setQualifiedName(memberOut.toString(), qualifiedName.namespaceIndex());
+                            break;
+                        }
+                        isdirty = true;
+                        updated = true;
                     }
-                    pelem->isdirty = false;
-                    isdirty = true;
-                    updated = true;
                 }
                 if (debug() >= 4)
                     std::cout << "Data from child element " << pelem->name
@@ -475,13 +477,26 @@ DataElementUaSdkNode::fillOutgoingData (const UaExtensionObject &base, UaExtensi
             {
                 Guard G(pelem->outgoingLock);
                 if (pelem->isDirty()) {
-                    UaVariant memberOut;
                     UaVariant memberBase = genericUnion.value();
-                    pelem->fillOutgoingData(memberBase, memberOut);
-                    if (pelem->isDirty()) {
-                        genericUnion.setValue(it.first + 1, memberOut);
-                        isdirty = true;
-                        updated = true;
+                    if (memberBase.type() == OpcUaType_ExtensionObject && !memberBase.isArray()) {
+                        UaExtensionObject eoBase, eoOut;
+                        memberBase.toExtensionObject(eoBase);
+                        pelem->fillOutgoingData(eoBase, eoOut);
+                        if (pelem->isDirty()) {
+                            UaVariant memberOut;
+                            memberOut.setExtensionObject(eoOut, OpcUa_True);
+                            genericUnion.setValue(it.first + 1, memberOut);
+                            isdirty = true;
+                            updated = true;
+                        }
+                    } else {
+                        UaVariant memberOut;
+                        pelem->fillOutgoingData(memberBase, memberOut);
+                        if (pelem->isDirty()) {
+                            genericUnion.setValue(it.first + 1, memberOut);
+                            isdirty = true;
+                            updated = true;
+                        }
                     }
                 }
             }
@@ -500,14 +515,27 @@ DataElementUaSdkNode::fillOutgoingData (const UaExtensionObject &base, UaExtensi
             {
                 Guard G(pelem->outgoingLock);
                 if (pelem->isDirty()) {
-                    UaVariant memberOut;
                     OpcUa_StatusCode stat;
                     UaVariant memberBase = genericStruct.value(it.first, &stat);
-                    pelem->fillOutgoingData(memberBase, memberOut);
-                    if (pelem->isDirty()) {
-                        genericStruct.setField(it.first, memberOut);
-                        isdirty = true;
-                        updated = true;
+                    if (memberBase.type() == OpcUaType_ExtensionObject && !memberBase.isArray()) {
+                        UaExtensionObject eoBase, eoOut;
+                        memberBase.toExtensionObject(eoBase);
+                        pelem->fillOutgoingData(eoBase, eoOut);
+                        if (pelem->isDirty()) {
+                            UaVariant memberOut;
+                            memberOut.setExtensionObject(eoOut, OpcUa_True);
+                            genericStruct.setField(it.first, memberOut);
+                            isdirty = true;
+                            updated = true;
+                        }
+                    } else {
+                        UaVariant memberOut;
+                        pelem->fillOutgoingData(memberBase, memberOut);
+                        if (pelem->isDirty()) {
+                            genericStruct.setField(it.first, memberOut);
+                            isdirty = true;
+                            updated = true;
+                        }
                     }
                 }
             }

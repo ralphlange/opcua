@@ -53,8 +53,15 @@ public:
     virtual void requestRecordProcessing(const ProcessReason reason) const override;
 
 private:
-    virtual bool isDirty() const override { return true; }
-    virtual void markAsDirty() override {}
+    virtual bool isDirty() const override { return isdirty; }
+    virtual void markAsDirty() override
+    {
+        if (!isdirty) {
+            isdirty = true;
+            if (parent)
+                parent->markAsDirty();
+        }
+    }
 
     void createMap(const std::string *timefrom = nullptr);
     void createMap(const UaLocalizedText&);
