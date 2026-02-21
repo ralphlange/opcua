@@ -192,7 +192,7 @@ DataElementUaSdkLeaf::fillOutgoingData (const UaVariant &base, UaVariant &out)
                 } else if (outgoingData.type() == OpcUaType_String) {
                     UaQualifiedName qn;
                     base.toQualifiedName(qn);
-                    qn.setName(outgoingData.toString());
+                    qn.setQualifiedName(outgoingData.toString(), qn.namespaceIndex());
                     out.setQualifiedName(qn);
                 } else {
                     out = outgoingData;
