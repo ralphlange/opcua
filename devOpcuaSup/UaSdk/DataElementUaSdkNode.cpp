@@ -418,7 +418,7 @@ DataElementUaSdkNode::fillOutgoingData (const UaVariant &base, UaVariant &out)
                                 qualifiedName.setNamespaceIndex(ns);
                             break;
                         case 1:
-                            qualifiedName.setQualifiedName(memberOut.toString(), qualifiedName.namespaceIndex());
+                            qualifiedName = UaQualifiedName(memberOut.toString(), qualifiedName.namespaceIndex());
                             break;
                         }
                         isdirty = true;
