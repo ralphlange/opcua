@@ -32,9 +32,9 @@
 #define epicsExportSharedSymbols
 #include "SubscriptionUaSdk.h"
 #include "RecordConnector.h"
-#include "ItemUaSdk.h"
 #include "DataElementUaSdk.h"
 #include "Registry.h"
+#include "Stats.h"
 #include "devOpcua.h"
 
 namespace DevOpcua {
@@ -276,6 +276,9 @@ SubscriptionUaSdk::dataChange (OpcUa_UInt32 clientSubscriptionHandle,
                                const UaDiagnosticInfos&   diagnosticInfos)
 {
     OpcUa_UInt32 i;
+    static auto counter(StatsManager::getInstance().getCounter(std::string(this->name).append("/dataChangeCount")));
+
+    counter->increment();
 
     if (debug)
         std::cout << "Subscription " << name.c_str()
@@ -302,5 +305,16 @@ void
 SubscriptionUaSdk::newEvents (OpcUa_UInt32 clientSubscriptionHandle,
                               UaEventFieldLists& eventFieldList)
 {}
+
+void SubscriptionUaSdk::notificationsMissing(OpcUa_UInt32 clientSubscriptionHandle,
+                                             OpcUa_UInt32 previousSequenceNumber,
+                                             OpcUa_UInt32 newSequenceNumber)
+{
+    static auto notificationsMissingCount(StatsManager::getInstance().getCounter(
+        std::string(this->name).append("/notificationsMissingCount")));
+    int steps = newSequenceNumber - previousSequenceNumber;
+    if (steps > 1)
+        notificationsMissingCount->increment(steps - 1);
+}
 
 } // namespace DevOpcua

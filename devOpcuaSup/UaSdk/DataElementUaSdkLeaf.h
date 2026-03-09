@@ -1,5 +1,5 @@
 /*************************************************************************\
-* Copyright (c) 2018-2025 ITER Organization.
+* Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
@@ -241,8 +241,8 @@ public:
      * @param pitem       pointer to corresponding ItemUaSdk
      * @param pconnector  pointer to record connector to link to
      */
-    DataElementUaSdkLeaf(const std::string &name, ItemUaSdk *pitem, RecordConnector *pconnector);
-    virtual ~DataElementUaSdkLeaf () override { delete enumChoices; }
+    DataElementUaSdkLeaf(const std::string &name, ItemUaSdk *item, RecordConnector *pconnector);
+    virtual ~DataElementUaSdkLeaf () override;
 
     /* ElementTree node interface methods */
     virtual bool isLeaf () const override { return true; }
@@ -264,12 +264,18 @@ public:
 
     virtual void show(const int level, const unsigned int indent) const override;
 
-    virtual void setIncomingData(UaVariant &value,
+    virtual void setIncomingData(const UaVariant &value,
+                                 ProcessReason reason,
+                                 const std::string *timefrom = nullptr,
+                                 const UaNodeId *typeId = nullptr) override;
+    virtual void setIncomingData(const UaExtensionObject &value,
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr) override;
     virtual void setIncomingEvent(ProcessReason reason) override;
     virtual void setState(const ConnectionStatus state) override;
+    virtual bool updateOutgoingData(UaVariant &value) override;
+    virtual bool updateOutgoingData(UaExtensionObject &value) override;
     virtual const UaVariant &getOutgoingData() override;
     virtual void clearOutgoingData() override;
     virtual void requestRecordProcessing(const ProcessReason reason) const override;
@@ -654,7 +660,10 @@ private:
     virtual void markAsDirty () override
     {
         isdirty = true;
-        pitem->markAsDirty();
+        if (parent)
+            parent->markAsDirty();
+        else
+            pitem->markAsDirty();
     }
 
     void dbgWriteScalar() const;
@@ -870,7 +879,7 @@ private:
     {
         long ret = 1;
 
-        switch (incomingData.type()) {
+        switch (dataType) {
         case OpcUaType_Boolean: { // Scope of Guard G
             Guard G(outgoingLock);
             outgoingData.setBoolean(value != 0);
@@ -969,7 +978,7 @@ private:
             errlogPrintf("%s : unsupported conversion from %s to %s for outgoing data\n",
                          prec->name,
                          epicsTypeString(value),
-                         variantTypeString(incomingData.type()));
+                         variantTypeString(dataType));
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
         }
         if (ret != 0) {
@@ -994,14 +1003,14 @@ private:
     {
         long ret = 0;
 
-        if (!incomingData.isArray()) {
+        if (!isArray) {
             errlogPrintf("%s : OPC UA data type is not an array\n", prec->name);
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
             ret = 1;
-        } else if (incomingData.type() != targetType) {
+        } else if (dataType != targetType) {
             errlogPrintf("%s : OPC UA data type (%s) does not match expected type (%s) for EPICS array (%s)\n",
                          prec->name,
-                         variantTypeString(incomingData.type()),
+                         variantTypeString(dataType),
                          variantTypeString(targetType),
                          epicsTypeString(*value));
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
@@ -1022,7 +1031,6 @@ private:
         return ret;
     }
 
-    int timesrc;
     UpdateQueue<UpdateUaSdk> incomingQueue; /**< queue of incoming values */
 };
 

@@ -15,7 +15,6 @@
 #include "SessionOpen62541.h"
 #include "SubscriptionOpen62541.h"
 #include "DataElementOpen62541.h"
-#include "ItemOpen62541.h"
 #include "linkParser.h"
 
 #ifdef HAS_XMLPARSER
@@ -46,9 +45,8 @@
 #include <string>
 #include <map>
 #include <algorithm>
-#include <utility>
-#include <limits>
 #include <functional>
+#include <utility>
 #include <cstdio>
 
 /* loadFile helper from open62541 examples */
@@ -2510,6 +2508,11 @@ SessionOpen62541::connectionStatusChanged (
                 // status needs to be updated before requests are being issued
                 sessionState = newSessionState;
                 reader.pushRequest(cargo, menuPriorityHIGH);
+                // Wait for initial read to finish
+                while (!reader.empty(menuPriorityHIGH)) {
+                    epicsThreadSleep(.1);
+                }
+                epicsThreadSleep(.1);
                 addAllMonitoredItems();
                 break;
             }

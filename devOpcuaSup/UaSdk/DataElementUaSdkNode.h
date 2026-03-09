@@ -1,5 +1,5 @@
 /*************************************************************************\
-* Copyright (c) 2018-2025 ITER Organization.
+* Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
@@ -27,8 +27,8 @@ namespace DevOpcua {
 class DataElementUaSdkNode : public DataElementUaSdk
 {
 public:
-    DataElementUaSdkNode(const std::string &name, class ItemUaSdk *item);
-    virtual ~DataElementUaSdkNode () override {}
+    DataElementUaSdkNode(const std::string &name, class ItemUaSdk *pitem);
+    virtual ~DataElementUaSdkNode () override;
 
     /* ElementTree node interface methods */
     virtual bool isLeaf() const override { return false; }
@@ -37,19 +37,25 @@ public:
 
     virtual void show(const int level, const unsigned int indent) const override;
 
-    virtual void setIncomingData(UaVariant &value,
+    virtual void setIncomingData(const UaVariant &value,
+                                 ProcessReason reason,
+                                 const std::string *timefrom = nullptr,
+                                 const UaNodeId *typeId = nullptr) override;
+    virtual void setIncomingData(const UaExtensionObject &value,
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr) override;
     virtual void setIncomingEvent(ProcessReason reason) override;
     virtual void setState(const ConnectionStatus state) override;
+    virtual bool updateOutgoingData(UaVariant &value) override;
+    virtual bool updateOutgoingData(UaExtensionObject &value) override;
     virtual const UaVariant &getOutgoingData() override;
     virtual void clearOutgoingData() override;
     virtual void requestRecordProcessing(const ProcessReason reason) const override;
 
 private:
-    virtual bool isDirty() const override { return true; }
-    virtual void markAsDirty() override {}
+    virtual bool isDirty() const override { return isdirty; }
+    virtual void markAsDirty() override;
 
     void createMap(const std::string *timefrom = nullptr);
     void createMap(const UaLocalizedText&);

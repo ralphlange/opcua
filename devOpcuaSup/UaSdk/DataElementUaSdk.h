@@ -71,7 +71,7 @@ variantTypeString (const OpcUa_BuiltInType type)
  * See DevOpcua::DataElement
  *
  */
-class DataElementUaSdk
+class DataElementUaSdk : public std::enable_shared_from_this<DataElementUaSdk>
 {
     friend class DataElementUaSdkNode;
     friend class DataElementUaSdkLeaf;
@@ -81,6 +81,7 @@ public:
         : name(name)
         , pitem(pitem)
         , outgoingLock(pitem->dataTreeWriteLock)
+        , isdirty(false)
     {}
     virtual ~DataElementUaSdk();
 
@@ -107,7 +108,24 @@ public:
      * @param timefrom  name of element to read item timestamp from
      * @param typeId  data type of the data element
      */
-    virtual void setIncomingData(UaVariant &value,
+    virtual void setIncomingData(const UaVariant &value,
+                                 ProcessReason reason,
+                                 const std::string *timefrom = nullptr,
+                                 const UaNodeId *typeId = nullptr)
+        = 0;
+
+    /**
+     * @brief Push an incoming data value (structured) into the DataElement.
+     *
+     * Called from the OPC UA client worker thread when new structured data
+     * is received from the OPC UA session.
+     *
+     * @param value  new value for this data element
+     * @param reason  reason for this value update
+     * @param timefrom  name of element to read item timestamp from
+     * @param typeId  data type of the data element
+     */
+    virtual void setIncomingData(const UaExtensionObject &value,
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr)
@@ -129,10 +147,29 @@ public:
     virtual void setState(const ConnectionStatus state) = 0;
 
     /**
-     * @brief Get the outgoing data value from the DataElement.
+     * @brief Update the outgoing data value from the DataElement.
      *
      * Called from the OPC UA client worker thread when data is being
      * assembled in OPC UA session for sending.
+     *
+     * @param value  data value to be updated (in-place)
+     * @return  true if value was updated
+     */
+    virtual bool updateOutgoingData(UaVariant &value) = 0;
+
+    /**
+     * @brief Update the outgoing data value (structured) from the DataElement.
+     *
+     * Called from the OPC UA client worker thread when structured data
+     * is being assembled in OPC UA session for sending.
+     *
+     * @param value  structured data value to be updated (in-place)
+     * @return  true if value was updated
+     */
+    virtual bool updateOutgoingData(UaExtensionObject &value) = 0;
+
+    /**
+     * @brief Get the outgoing data value from the DataElement.
      *
      * @return  reference to outgoing data
      */
@@ -172,7 +209,10 @@ protected:
     ItemUaSdk *pitem;                             /**< corresponding item */
     std::shared_ptr<DataElementUaSdk> parent;     /**< parent */
 
-    UaVariant incomingData;   /**< cache of latest incoming value */
+    OpcUa_BuiltInType dataType;                   /**< data type */
+    OpcUa_Boolean isArray;                        /**< true if array */
+    UaNodeId encodingTypeId;                      /**< encoding type id (if structured) */
+
     epicsMutex &outgoingLock; /**< data lock for outgoing value */
     UaVariant outgoingData;   /**< cache of latest outgoing value */
     bool isdirty;             /**< outgoing value has been (or needs to be) updated */

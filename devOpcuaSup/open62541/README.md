@@ -3,9 +3,9 @@
 ## Status
 
 :warning:
-This module is under development and still experimental.
-
-**Structured OPC UA data types are not supported at this time.**
+This module is relatively new (2014),
+but gaining popularity
+and getting more and more hours of production use.
 
 :warning:
 Please contact the authors

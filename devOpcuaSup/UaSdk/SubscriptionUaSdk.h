@@ -180,6 +180,9 @@ public:
             OpcUa_UInt32                clientSubscriptionHandle,
             UaEventFieldLists&          eventFieldList
             ) override;
+    virtual void notificationsMissing(OpcUa_UInt32 clientSubscriptionHandle,
+                                      OpcUa_UInt32 previousSequenceNumber,
+                                      OpcUa_UInt32 newSequenceNumber) override;
 
 private:
     static Registry<SubscriptionUaSdk> subscriptions; /**< subscription management */

@@ -121,6 +121,7 @@ void StatsExecTime::print(std::ostream &os) const
     os << "    Average Time: " << getAverageTimeUs() << " us" << std::endl;
     os << "    Histogram (us):" << std::endl;
     histogram.print(os);
+    os << std::endl;
 }
 
 StatsTimer::StatsTimer(std::shared_ptr<StatsExecTime> stats)
