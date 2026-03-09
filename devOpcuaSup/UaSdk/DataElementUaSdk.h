@@ -71,7 +71,7 @@ variantTypeString (const OpcUa_BuiltInType type)
  * See DevOpcua::DataElement
  *
  */
-class DataElementUaSdk
+class DataElementUaSdk : public std::enable_shared_from_this<DataElementUaSdk>
 {
     friend class DataElementUaSdkNode;
     friend class DataElementUaSdkLeaf;

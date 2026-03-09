@@ -59,6 +59,7 @@ GTESTS += LinkParserTest
 
 GTESTPROD_HOST += ElementTreeTest
 ElementTreeTest_SRCS += ElementTreeTest.cpp
+ElementTreeTest_SRCS += Stats.cpp
 ElementTreeTest_LIBS += opcua
 GTESTS += ElementTreeTest
 

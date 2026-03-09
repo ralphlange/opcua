@@ -54,7 +54,7 @@ void
 DataElementUaSdkNode::addChild (std::weak_ptr<DataElementUaSdk> elem)
 {
     if (auto pelem = elem.lock())
-        pelem->setParent(pitem->dataTree.shared_from(this));
+        pelem->setParent(shared_from_this());
     elements.push_back(elem);
 }
 

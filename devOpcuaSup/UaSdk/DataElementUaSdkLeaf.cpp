@@ -102,7 +102,7 @@ DataElementUaSdkLeaf::setIncomingData (const UaExtensionObject &value,
                                        const UaNodeId *typeId)
 {
     UaVariant v;
-    v.setExtensionObject(value, OpcUa_False);
+    v.setExtensionObject(const_cast<UaExtensionObject &>(value), OpcUa_False);
     setIncomingData(v, reason, timefrom, typeId);
 }
 
