@@ -70,7 +70,7 @@ public:
     /**
      * @brief Request beginWrite service. See DevOpcua::Item::requestWrite
      */
-    virtual void requestWrite() override { session->requestWrite(*this); }
+    virtual void requestWrite() override;
 
     /**
      * @brief Schedule a write request if item data is "dirty".
@@ -225,8 +225,10 @@ private:
     OpcUa_Double revisedSamplingInterval;  /**< server-revised sampling interval */
     OpcUa_UInt32 revisedQueueSize;         /**< server-revised queue size */
     ElementTree<DataElementUaSdkNode, DataElementUaSdk, ItemUaSdk> dataTree; /**< data element tree */
-    epicsMutex dataTreeWriteLock;           /**< lock for dirty flag */
+    epicsMutex dataTreeWriteLock;          /**< lock for dirty flag */
     bool dataTreeDirty;                    /**< true if any element has been modified */
+    unsigned int dataTreeNoOfNodes;        /**< number of nodes */
+    unsigned int dataTreeNoOfLeafs;        /**< number of leafs */
     UaStatusCode lastStatus;               /**< status code of most recent service */
     ProcessReason lastReason;              /**< most recent processing reason */
     epicsTime tsClient;                    /**< client (local) time stamp */

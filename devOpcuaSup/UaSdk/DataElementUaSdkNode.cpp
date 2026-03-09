@@ -1,5 +1,5 @@
 /*************************************************************************\
-* Copyright (c) 2018-2025 ITER Organization.
+* Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
@@ -30,20 +30,31 @@
 #include <errlog.h>
 
 #include "ItemUaSdk.h"
-#include "RecordConnector.h"
 #include "Stats.h"
+#include "RecordConnector.h"
 
 namespace DevOpcua {
 
-DataElementUaSdkNode::DataElementUaSdkNode (const std::string &name, class ItemUaSdk *item)
-    : DataElementUaSdk(name, item)
+DataElementUaSdkNode::DataElementUaSdkNode (const std::string &name, class ItemUaSdk *pitem)
+    : DataElementUaSdk(name, pitem)
     , timesrc(-1)
     , mapped(false)
-{}
+{
+    dataType = OpcUaType_ExtensionObject;
+    isArray = OpcUa_False;
+    pitem->dataTreeNoOfNodes++;
+}
+
+DataElementUaSdkNode::~DataElementUaSdkNode()
+{
+    pitem->dataTreeNoOfNodes--;
+}
 
 void
 DataElementUaSdkNode::addChild (std::weak_ptr<DataElementUaSdk> elem)
 {
+    if (auto pelem = elem.lock())
+        pelem->setParent(pitem->dataTree.shared_from(this));
     elements.push_back(elem);
 }
 
@@ -146,14 +157,121 @@ DataElementUaSdkNode::createMap (const UaQualifiedName &)
 }
 
 void
+DataElementUaSdkNode::markAsDirty ()
+{
+    isdirty = true;
+    if (parent)
+        parent->markAsDirty();
+    else
+        pitem->markAsDirty();
+}
+
+void
+DataElementUaSdkNode::setIncomingData (const UaExtensionObject &extensionObject,
+                                       ProcessReason reason,
+                                       const std::string *timefrom,
+                                       const UaNodeId *)
+{
+    static auto catalogTimer(
+        StatsManager::getInstance()
+            .getExecutionStats(std::string(pitem->session->getName()).append("/catalogQueryTimer"),
+                               std::vector<double>{10, 20, 50, 100, 200, 500, 1000}));
+
+    if (debug() >= 5)
+        std::cout << "Element " << name << " splitting structured data (ExtensionObject) to " << elements.size()
+                  << " child elements" << std::endl;
+
+    UaExtensionObject &eo = const_cast<UaExtensionObject &>(extensionObject);
+    if (eo.encoding() == UaExtensionObject::EncodeableObject)
+        eo.changeEncoding(UaExtensionObject::Binary);
+
+    dataType = OpcUaType_ExtensionObject;
+    isArray = OpcUa_False;
+    encodingTypeId = eo.encodingTypeId();
+
+    if (definition.isNull()) {
+        StatsTimer t(catalogTimer);
+        definition = pitem->structureDefinition(eo.encodingTypeId());
+        if (definition.isNull()) {
+            errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
+                         "encodingTypeId %s) - no access to type dictionary?\n",
+                         pitem->nodeid->toString().toUtf8(),
+                         name.c_str(),
+                         eo.dataTypeId().toString().toUtf8(),
+                         eo.encodingTypeId().toString().toUtf8());
+            return;
+        }
+    }
+
+    if (!mapped)
+        createMap(timefrom);
+
+    if (timefrom) {
+        if (timesrc >= 0)
+            pitem->tsData = epicsTimeFromUaVariant(UaGenericStructureValue(eo, definition).value(timesrc));
+        else
+            pitem->tsData = pitem->tsSource;
+    }
+
+    for (const auto &it : elementMap) {
+        auto pelem = it.second.lock();
+        OpcUa_StatusCode stat;
+        if (definition.isUnion()) {
+            UaGenericUnionValue genericValue(eo, definition);
+            int index = genericValue.switchValue() - 1;
+            if (it.first == index) {
+                UaVariant v = genericValue.value();
+                if (v.type() == OpcUaType_ExtensionObject) {
+                    UaExtensionObject eo_child;
+                    v.toExtensionObject(eo_child);
+                    pelem->setIncomingData(eo_child, reason);
+                } else {
+                    pelem->setIncomingData(v, reason);
+                }
+                stat = OpcUa_Good;
+            } else {
+                stat = OpcUa_BadNoData;
+            }
+        } else {
+            UaVariant memberValue = UaGenericStructureValue(eo, definition).value(it.first, &stat);
+            if (stat == OpcUa_Good) {
+                if (memberValue.type() == OpcUaType_ExtensionObject) {
+                    UaExtensionObject eo_child;
+                    memberValue.toExtensionObject(eo_child);
+                    pelem->setIncomingData(eo_child, reason);
+                } else {
+                    pelem->setIncomingData(memberValue, reason);
+                }
+            }
+        }
+        if (stat == OpcUa_BadNoData) {
+            const UaStructureField &field = definition.child(it.first);
+            OpcUa_Variant fakeValue;
+            OpcUa_Variant_Initialize(&fakeValue);
+            fakeValue.Datatype = field.valueType();
+            fakeValue.ArrayType = field.valueRank() != 0;
+            if (debug())
+                std::cerr << pitem->recConnector->getRecordName() << " element " << pelem->name
+                          << (definition.isUnion() ? " not taken choice " : " absent optional ")
+                          << variantTypeString((OpcUa_BuiltInType) fakeValue.Datatype)
+                          << (fakeValue.ArrayType ? " array" : " scalar") << std::endl;
+            pelem->setIncomingData(fakeValue, ProcessReason::readFailure);
+        }
+    }
+}
+
+void
 DataElementUaSdkNode::setIncomingData (const UaVariant &value,
                                        ProcessReason reason,
                                        const std::string *timefrom,
                                        const UaNodeId *typeId)
 {
+    dataType = value.type();
+    isArray = value.isArray();
+
     if (debug() >= 5)
-        std::cout << "Element " << name << " splitting structured data to " << elements.size() << " child elements"
-                  << std::endl;
+        std::cout << "Element " << name << " splitting structured data (Variant) to " << elements.size()
+                  << " child elements" << std::endl;
 
     switch (value.type()) {
     case OpcUaType_ExtensionObject: {
@@ -213,93 +331,6 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
 }
 
 void
-DataElementUaSdkNode::setIncomingData (const UaExtensionObject &extensionObject,
-                                       ProcessReason reason,
-                                       const std::string *timefrom,
-                                       const UaNodeId *)
-{
-    if (debug() >= 5)
-        std::cout << "Element " << name << " splitting structured data to " << elements.size() << " child elements"
-                  << std::endl;
-
-    UaExtensionObject &eo = const_cast<UaExtensionObject &>(extensionObject);
-    if (eo.encoding() == UaExtensionObject::EncodeableObject)
-        eo.changeEncoding(UaExtensionObject::Binary);
-    static auto catalog_timer(StatsManager::getInstance().getExecutionStats(
-        "catalog_query", std::vector<double>{100, 200, 500, 1000, 2000, 5000, 10000}));
-
-    if (definition.isNull()) {
-        StatsTimer t(catalog_timer);
-        definition = pitem->structureDefinition(eo.encodingTypeId());
-        if (definition.isNull()) {
-            errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
-                         "encodingTypeId %s) - no access to type dictionary?\n",
-                         pitem->nodeid->toString().toUtf8(),
-                         name.c_str(),
-                         eo.dataTypeId().toString().toUtf8(),
-                         eo.encodingTypeId().toString().toUtf8());
-            return;
-        }
-    }
-
-    if (!mapped)
-        createMap(timefrom);
-
-    if (timefrom) {
-        if (timesrc >= 0)
-            pitem->tsData = epicsTimeFromUaVariant(UaGenericStructureValue(eo, definition).value(timesrc));
-        else
-            pitem->tsData = pitem->tsSource;
-    }
-
-    for (const auto &it : elementMap) {
-        auto pelem = it.second.lock();
-        OpcUa_StatusCode stat;
-        if (definition.isUnion()) {
-            UaGenericUnionValue genericValue(eo, definition);
-            int index = genericValue.switchValue() - 1;
-            if (it.first == index) {
-                const UaVariant memberValue = genericValue.value();
-                if (memberValue.type() == OpcUaType_ExtensionObject && !memberValue.isArray()) {
-                    UaExtensionObject childEo;
-                    memberValue.toExtensionObject(childEo);
-                    pelem->setIncomingData(childEo, reason);
-                } else {
-                    pelem->setIncomingData(memberValue, reason);
-                }
-                stat = OpcUa_Good;
-            } else {
-                stat = OpcUa_BadNoData;
-            }
-        } else {
-            const UaVariant memberValue = UaGenericStructureValue(eo, definition).value(it.first, &stat);
-            if (stat == OpcUa_Good) {
-                if (memberValue.type() == OpcUaType_ExtensionObject && !memberValue.isArray()) {
-                    UaExtensionObject childEo;
-                    memberValue.toExtensionObject(childEo);
-                    pelem->setIncomingData(childEo, reason);
-                } else {
-                    pelem->setIncomingData(memberValue, reason);
-                }
-            }
-        }
-        if (stat == OpcUa_BadNoData) {
-            const UaStructureField &field = definition.child(it.first);
-            OpcUa_Variant fakeValue;
-            OpcUa_Variant_Initialize(&fakeValue);
-            fakeValue.Datatype = field.valueType();
-            fakeValue.ArrayType = field.valueRank() != 0;
-            if (debug())
-                std::cerr << pitem->recConnector->getRecordName() << " element " << pelem->name
-                          << (definition.isUnion() ? " not taken choice " : " absent optional ")
-                          << variantTypeString((OpcUa_BuiltInType) fakeValue.Datatype)
-                          << (fakeValue.ArrayType ? " array" : " scalar") << std::endl;
-            pelem->setIncomingData(fakeValue, ProcessReason::readFailure);
-        }
-    }
-}
-
-void
 DataElementUaSdkNode::setIncomingEvent (ProcessReason reason)
 {
     for (const auto &it : elements) {
@@ -323,220 +354,75 @@ DataElementUaSdkNode::setState (const ConnectionStatus state)
     }
 }
 
-void
-DataElementUaSdkNode::fillOutgoingData (const UaVariant &base, UaVariant &out)
+bool
+DataElementUaSdkNode::updateOutgoingData (UaVariant &value)
 {
-    if (debug() >= 4)
-        std::cout << "Element " << name << " updating structured data from " << elements.size() << " child elements"
-                  << std::endl;
-
-    out = base;
-    bool isdirty = false;
-    switch (out.type()) {
-    case OpcUaType_ExtensionObject: {
-        UaExtensionObject eoBase, eoOut;
-        out.toExtensionObject(eoBase);
-        fillOutgoingData(eoBase, eoOut);
-        out.setExtensionObject(eoOut, OpcUa_True);
-        isdirty = true; // Optimization: always mark dirty if it's a structure for now?
-        // Actually, fillOutgoingData(eoBase, eoOut) should tell us if it's dirty.
-        break;
-    }
-    case OpcUaType_LocalizedText: {
-        UaLocalizedText localizedText;
-        out.toLocalizedText(localizedText);
-        if (!mapped)
-            createMap(localizedText);
-
-        for (const auto &it : elementMap) {
-            auto pelem = it.second.lock();
-            bool updated = false;
-            {
-                Guard G(pelem->outgoingLock);
-                UaVariant memberOut;
-                UaVariant memberBase;
-                switch (it.first) {
-                case 0:
-                    memberBase.setString(localizedText.locale());
-                    break;
-                case 1:
-                    memberBase.setString(localizedText.text());
-                    break;
-                }
-                if (pelem->isDirty()) {
-                    pelem->fillOutgoingData(memberBase, memberOut);
-                    if (pelem->isDirty()) {
-                        switch (it.first) {
-                        case 0:
-                            localizedText.setLocale(memberOut.toString());
-                            break;
-                        case 1:
-                            localizedText.setText(memberOut.toString());
-                            break;
-                        }
-                        isdirty = true;
-                        updated = true;
-                    }
-                }
-                if (debug() >= 4)
-                    std::cout << "Data from child element " << pelem->name
-                              << (updated ? " inserted into LocalizedText" : " ignored (not dirty)") << std::endl;
-            }
+    if (value.type() == OpcUaType_ExtensionObject) {
+        UaExtensionObject extensionObject;
+        value.toExtensionObject(extensionObject);
+        if (updateOutgoingData(extensionObject)) {
+            value.setExtensionObject(extensionObject, OpcUa_True);
+            return true;
         }
-        if (isdirty)
-            out.setLocalizedText(localizedText);
-        break;
     }
-    case OpcUaType_QualifiedName: {
-        UaQualifiedName qualifiedName;
-        out.toQualifiedName(qualifiedName);
-        if (!mapped)
-            createMap(qualifiedName);
-
-        for (const auto &it : elementMap) {
-            auto pelem = it.second.lock();
-            bool updated = false;
-            {
-                Guard G(pelem->outgoingLock);
-                UaVariant memberOut;
-                UaVariant memberBase;
-                switch (it.first) {
-                case 0:
-                    memberBase.setUInt16(qualifiedName.namespaceIndex());
-                    break;
-                case 1:
-                    memberBase.setString(qualifiedName.name());
-                    break;
-                }
-                if (pelem->isDirty()) {
-                    pelem->fillOutgoingData(memberBase, memberOut);
-                    if (pelem->isDirty()) {
-                        OpcUa_UInt16 ns;
-                        switch (it.first) {
-                        case 0:
-                            if (memberOut.toUInt16(ns) == OpcUa_Good)
-                                qualifiedName.setNamespaceIndex(ns);
-                            break;
-                        case 1:
-                            qualifiedName = UaQualifiedName(memberOut.toString(), qualifiedName.namespaceIndex());
-                            break;
-                        }
-                        isdirty = true;
-                        updated = true;
-                    }
-                }
-                if (debug() >= 4)
-                    std::cout << "Data from child element " << pelem->name
-                              << (updated ? " inserted into QualifiedName" : " ignored (not dirty)") << std::endl;
-            }
-        }
-        if (isdirty)
-            out.setQualifiedName(qualifiedName);
-        break;
-    }
-    default:
-        errlogPrintf("%s: %s is no structured data but a %s\n",
-                     pitem->recConnector->getRecordName(),
-                     name.c_str(),
-                     variantTypeString(out.type()));
-    }
-    this->isdirty = isdirty;
+    return false;
 }
 
-void
-DataElementUaSdkNode::fillOutgoingData (const UaExtensionObject &base, UaExtensionObject &out)
+bool
+DataElementUaSdkNode::updateOutgoingData (UaExtensionObject &extensionObject)
 {
     if (debug() >= 4)
         std::cout << "Element " << name << " updating structured data from " << elements.size() << " child elements"
                   << std::endl;
 
-    out = base;
-    if (out.encoding() == UaExtensionObject::EncodeableObject)
-        out.changeEncoding(UaExtensionObject::Binary);
+    if (extensionObject.encoding() == UaExtensionObject::EncodeableObject)
+        extensionObject.changeEncoding(UaExtensionObject::Binary);
 
-    UaStructureDefinition def = pitem->structureDefinition(out.encodingTypeId());
-    if (def.isNull()) {
+    UaStructureDefinition definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+    if (definition.isNull()) {
         errlogPrintf("Cannot get a structure definition for extensionObject with dataTypeID %s "
                      "/ encodingTypeID %s - "
                      "check access to type "
                      "dictionary\n",
-                     out.dataTypeId().toString().toUtf8(),
-                     out.encodingTypeId().toString().toUtf8());
-        return;
+                     extensionObject.dataTypeId().toString().toUtf8(),
+                     extensionObject.encodingTypeId().toString().toUtf8());
+        return false;
     }
 
     if (!mapped)
         createMap();
 
     bool isdirty = false;
-    if (def.isUnion()) {
-        UaGenericUnionValue genericUnion(out, def);
+    if (definition.isUnion()) {
+        UaGenericUnionValue genericUnion(extensionObject, definition);
         for (const auto &it : elementMap) {
             auto pelem = it.second.lock();
             bool updated = false;
-            {
-                Guard G(pelem->outgoingLock);
-                if (pelem->isDirty()) {
-                    UaVariant memberBase = genericUnion.value();
-                    if (memberBase.type() == OpcUaType_ExtensionObject && !memberBase.isArray()) {
-                        UaExtensionObject eoBase, eoOut;
-                        memberBase.toExtensionObject(eoBase);
-                        pelem->fillOutgoingData(eoBase, eoOut);
-                        if (pelem->isDirty()) {
-                            UaVariant memberOut;
-                            memberOut.setExtensionObject(eoOut, OpcUa_True);
-                            genericUnion.setValue(it.first + 1, memberOut);
-                            isdirty = true;
-                            updated = true;
-                        }
-                    } else {
-                        UaVariant memberOut;
-                        pelem->fillOutgoingData(memberBase, memberOut);
-                        if (pelem->isDirty()) {
-                            genericUnion.setValue(it.first + 1, memberOut);
-                            isdirty = true;
-                            updated = true;
-                        }
-                    }
-                }
+            UaVariant memberValue = genericUnion.value();
+            if (pelem->updateOutgoingData(memberValue)) {
+                genericUnion.setValue(it.first + 1, memberValue);
+                isdirty = true;
+                updated = true;
             }
             if (debug() >= 4)
                 std::cout << "Data from child element " << pelem->name
                           << (updated ? " inserted into union" : " ignored (not dirty)") << std::endl;
         }
         if (isdirty)
-            genericUnion.toExtensionObject(out);
+            genericUnion.toExtensionObject(extensionObject);
 
     } else {
-        UaGenericStructureValue genericStruct(out, def);
+        UaGenericStructureValue genericStruct(extensionObject, definition);
         for (const auto &it : elementMap) {
             auto pelem = it.second.lock();
             bool updated = false;
-            {
-                Guard G(pelem->outgoingLock);
-                if (pelem->isDirty()) {
-                    OpcUa_StatusCode stat;
-                    UaVariant memberBase = genericStruct.value(it.first, &stat);
-                    if (memberBase.type() == OpcUaType_ExtensionObject && !memberBase.isArray()) {
-                        UaExtensionObject eoBase, eoOut;
-                        memberBase.toExtensionObject(eoBase);
-                        pelem->fillOutgoingData(eoBase, eoOut);
-                        if (pelem->isDirty()) {
-                            UaVariant memberOut;
-                            memberOut.setExtensionObject(eoOut, OpcUa_True);
-                            genericStruct.setField(it.first, memberOut);
-                            isdirty = true;
-                            updated = true;
-                        }
-                    } else {
-                        UaVariant memberOut;
-                        pelem->fillOutgoingData(memberBase, memberOut);
-                        if (pelem->isDirty()) {
-                            genericStruct.setField(it.first, memberOut);
-                            isdirty = true;
-                            updated = true;
-                        }
-                    }
+            OpcUa_StatusCode stat;
+            UaVariant memberValue = genericStruct.value(it.first, &stat);
+            if (stat == OpcUa_Good) {
+                if (pelem->updateOutgoingData(memberValue)) {
+                    genericStruct.setField(it.first, memberValue);
+                    isdirty = true;
+                    updated = true;
                 }
             }
             if (debug() >= 4)
@@ -544,18 +430,129 @@ DataElementUaSdkNode::fillOutgoingData (const UaExtensionObject &base, UaExtensi
                           << (updated ? " inserted into structure" : " ignored (not dirty)") << std::endl;
         }
         if (isdirty)
-            genericStruct.toExtensionObject(out);
+            genericStruct.toExtensionObject(extensionObject);
     }
-    this->isdirty = isdirty;
+    return isdirty;
+}
+
+const UaVariant &
+DataElementUaSdkNode::getOutgoingData ()
+{
+    if (debug() >= 4)
+        std::cout << "Element " << name << " updating structured data from " << elements.size() << " child elements"
+                  << std::endl;
+
+    outgoingData = pitem->incomingData;
+    bool isdirty = false;
+    switch (outgoingData.type()) {
+    case OpcUaType_ExtensionObject: {
+        UaExtensionObject extensionObject;
+        outgoingData.toExtensionObject(extensionObject);
+        isdirty = updateOutgoingData(extensionObject);
+
+        if (isdirty)
+            outgoingData.setExtensionObject(extensionObject, OpcUa_True);
+        break;
+    }
+    case OpcUaType_LocalizedText: {
+        UaLocalizedText localizedText;
+        outgoingData.toLocalizedText(localizedText);
+        if (!mapped)
+            createMap(localizedText);
+
+        for (const auto &it : elementMap) {
+            auto pelem = it.second.lock();
+            bool updated = false;
+            UaVariant memberValue;
+            switch (it.first) {
+            case 0:
+                memberValue.setString(localizedText.locale());
+                break;
+            case 1:
+                memberValue.setString(localizedText.text());
+                break;
+            }
+            if (pelem->updateOutgoingData(memberValue)) {
+                switch (it.first) {
+                case 0:
+                    localizedText.setLocale(memberValue.toString());
+                    break;
+                case 1:
+                    localizedText.setText(memberValue.toString());
+                    break;
+                }
+                isdirty = true;
+                updated = true;
+            }
+            if (debug() >= 4)
+                std::cout << "Data from child element " << pelem->name
+                          << (updated ? " inserted into LocalizedText" : " ignored (not dirty)") << std::endl;
+        }
+        if (isdirty)
+            outgoingData.setLocalizedText(localizedText);
+        break;
+    }
+    case OpcUaType_QualifiedName: {
+        UaQualifiedName qualifiedName;
+        outgoingData.toQualifiedName(qualifiedName);
+        if (!mapped)
+            createMap(qualifiedName);
+
+        for (const auto &it : elementMap) {
+            auto pelem = it.second.lock();
+            bool updated = false;
+            UaVariant memberValue;
+            switch (it.first) {
+            case 0:
+                memberValue.setUInt16(qualifiedName.namespaceIndex());
+                break;
+            case 1:
+                memberValue.setString(qualifiedName.name());
+                break;
+            }
+            if (pelem->updateOutgoingData(memberValue)) {
+                OpcUa_UInt16 ns = qualifiedName.namespaceIndex();
+                UaString name = qualifiedName.name();
+                switch (it.first) {
+                case 0:
+                    (void) memberValue.toUInt16(ns);
+                    break;
+                case 1:
+                    name = memberValue.toString();
+                    break;
+                }
+                qualifiedName = UaQualifiedName(name, ns);
+                isdirty = true;
+                updated = true;
+            }
+            if (debug() >= 4)
+                std::cout << "Data from child element " << pelem->name
+                          << (updated ? " inserted into QualifiedName" : " ignored (not dirty)") << std::endl;
+        }
+        if (isdirty)
+            outgoingData.setQualifiedName(qualifiedName);
+        break;
+    }
+    default:
+        errlogPrintf("%s: %s is no structured data but a %s\n",
+                     pitem->recConnector->getRecordName(),
+                     name.c_str(),
+                     variantTypeString(outgoingData.type()));
+        return outgoingData;
+    }
+    if (debug() >= 4) {
+        if (isdirty)
+            std::cout << "Encoding changed data structure to outgoingData of element " << name << std::endl;
+        else
+            std::cout << "Returning unchanged outgoingData of element " << name << std::endl;
+    }
+    return outgoingData;
 }
 
 void
 DataElementUaSdkNode::clearOutgoingData ()
 {
-    for (const auto &it : elements)
-        if (auto pelem = it.lock())
-            pelem->clearOutgoingData();
-    isdirty = false;
+    outgoingData.clear();
 }
 
 void

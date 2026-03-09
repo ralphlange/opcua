@@ -1,5 +1,5 @@
 /*************************************************************************\
-* Copyright (c) 2018-2025 ITER Organization.
+* Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
@@ -241,8 +241,8 @@ public:
      * @param pitem       pointer to corresponding ItemUaSdk
      * @param pconnector  pointer to record connector to link to
      */
-    DataElementUaSdkLeaf(const std::string &name, ItemUaSdk *pitem, RecordConnector *pconnector);
-    virtual ~DataElementUaSdkLeaf () override { delete enumChoices; }
+    DataElementUaSdkLeaf(const std::string &name, ItemUaSdk *item, RecordConnector *pconnector);
+    virtual ~DataElementUaSdkLeaf () override;
 
     /* ElementTree node interface methods */
     virtual bool isLeaf () const override { return true; }
@@ -274,8 +274,9 @@ public:
                                  const UaNodeId *typeId = nullptr) override;
     virtual void setIncomingEvent(ProcessReason reason) override;
     virtual void setState(const ConnectionStatus state) override;
-    virtual void fillOutgoingData(const UaVariant &base, UaVariant &out) override;
-    virtual void fillOutgoingData(const UaExtensionObject &base, UaExtensionObject &out) override;
+    virtual bool updateOutgoingData(UaVariant &value) override;
+    virtual bool updateOutgoingData(UaExtensionObject &value) override;
+    virtual const UaVariant &getOutgoingData() override;
     virtual void clearOutgoingData() override;
     virtual void requestRecordProcessing(const ProcessReason reason) const override;
     virtual int debug() const override;
@@ -658,12 +659,11 @@ private:
     virtual bool isDirty () const override { return isdirty; }
     virtual void markAsDirty () override
     {
-        if (!isdirty) {
-            isdirty = true;
-            if (parent)
-                parent->markAsDirty();
+        isdirty = true;
+        if (parent)
+            parent->markAsDirty();
+        else
             pitem->markAsDirty();
-        }
     }
 
     void dbgWriteScalar() const;
@@ -879,7 +879,7 @@ private:
     {
         long ret = 1;
 
-        switch (dataType) {
+        switch (incomingData.type()) {
         case OpcUaType_Boolean: { // Scope of Guard G
             Guard G(outgoingLock);
             outgoingData.setBoolean(value != 0);
@@ -978,7 +978,7 @@ private:
             errlogPrintf("%s : unsupported conversion from %s to %s for outgoing data\n",
                          prec->name,
                          epicsTypeString(value),
-                         variantTypeString(dataType));
+                         variantTypeString(incomingData.type()));
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
         }
         if (ret != 0) {
@@ -1003,7 +1003,11 @@ private:
     {
         long ret = 0;
 
-        if (dataType != targetType) {
+        if (!isArray) {
+            errlogPrintf("%s : OPC UA data type is not an array\n", prec->name);
+            (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
+            ret = 1;
+        } else if (dataType != targetType) {
             errlogPrintf("%s : OPC UA data type (%s) does not match expected type (%s) for EPICS array (%s)\n",
                          prec->name,
                          variantTypeString(dataType),
@@ -1027,10 +1031,6 @@ private:
         return ret;
     }
 
-    int timesrc;
-    OpcUa_BuiltInType dataType;             /**< OPC UA data type of this element */
-    bool isArray;                           /**< true if this element is an array */
-    UaNodeId encodingTypeId;                /**< encoding type ID (if structured) */
     UpdateQueue<UpdateUaSdk> incomingQueue; /**< queue of incoming values */
 };
 

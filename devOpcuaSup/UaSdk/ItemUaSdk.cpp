@@ -1,5 +1,5 @@
 /*************************************************************************\
-* Copyright (c) 2018-2021 ITER Organization.
+* Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
@@ -27,7 +27,8 @@
 #include "devOpcua.h"
 #include "opcuaItemRecord.h"
 
-namespace DevOpcua {
+namespace DevOpcua
+{
 
 using namespace UaClientSdk;
 
@@ -46,6 +47,8 @@ ItemUaSdk::ItemUaSdk (const linkInfo &info)
     , revisedSamplingInterval(0.0)
     , revisedQueueSize(0)
     , dataTreeDirty(false)
+    , dataTreeNoOfNodes(0)
+    , dataTreeNoOfLeafs(0)
     , lastStatus(OpcUa_BadServerNotConnected)
     , lastReason(ProcessReason::connectionLoss)
 {
@@ -75,6 +78,15 @@ ItemUaSdk::rebuildNodeId ()
         nodeid = std::unique_ptr<UaNodeId>(new UaNodeId(linkinfo.identifierString.c_str(), ns));
     }
     registered = false;
+}
+
+void ItemUaSdk::requestWrite()
+{
+    static auto writeCounter(StatsManager::getInstance().getCounter(
+        std::string(recConnector->getRecordName()).append("/writeCount")));
+
+    writeCounter->increment();
+    session->requestWrite(*this);
 }
 
 void
@@ -111,7 +123,10 @@ ItemUaSdk::show (int level) const
     std::cout << " bini=" << linkOptionBiniString(linkinfo.bini) << " output=" << (linkinfo.isOutput ? "y" : "n")
               << " monitor=" << (linkinfo.monitor ? "y" : "n")
               << " registered=" << (registered ? nodeid->toString().toUtf8() : "-") << "("
-              << (linkinfo.registerNode ? "y" : "n") << ")" << std::endl;
+              << (linkinfo.registerNode ? "y" : "n") << ")";
+    if (!(dataTreeNoOfNodes == 0 && dataTreeNoOfLeafs == 1))
+        std::cout << " dataNodes=" << dataTreeNoOfNodes << " dataLeafs=" << dataTreeNoOfLeafs;
+    std::cout << std::endl;
 
     if (level >= 1) {
         if (auto re = dataTree.root().lock()) {
@@ -132,9 +147,9 @@ ItemUaSdk::copyAndClearOutgoingData (_OpcUa_WriteValue &wvalue)
 {
     Guard G(dataTreeWriteLock);
     if (auto pd = dataTree.root().lock()) {
-        UaVariant out;
-        pd->fillOutgoingData(incomingData, out);
-        out.copyTo(&wvalue.Value.Value);
+        UaVariant v = incomingData;
+        pd->updateOutgoingData(v);
+        v.copyTo(&wvalue.Value.Value);
         pd->clearOutgoingData();
     }
     dataTreeDirty = false;
@@ -149,9 +164,18 @@ ItemUaSdk::uaToEpicsTime (const UaDateTime &dt, const OpcUa_UInt16 pico10)
     return epicsTime(ts);
 }
 
-void
-ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, const UaNodeId *typeId)
+void ItemUaSdk::setIncomingData(const OpcUa_DataValue &value,
+                                ProcessReason reason,
+                                const UaNodeId *typeId)
 {
+    static auto newDataCounter(StatsManager::getInstance().getCounter(
+        std::string(recConnector->getRecordName()).append("/newDataCount")));
+    static auto readCounter(StatsManager::getInstance().getCounter(
+        std::string(recConnector->getRecordName()).append("/readCount")));
+    static auto dissectTimer(StatsManager::getInstance().getExecutionStats(
+        std::string(recConnector->getRecordName()).append("/dissectTimer"),
+        std::vector<double>{100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000}));
+
     tsClient = epicsTime::getCurrent();
     if (OpcUa_IsNotBad(value.StatusCode)) {
         tsSource = uaToEpicsTime(UaDateTime(value.SourceTimestamp), value.SourcePicoseconds);
@@ -173,18 +197,20 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
 
     setLastStatus(value.StatusCode);
 
-    static auto dissect_timer(StatsManager::getInstance().getExecutionStats(
-        "dissect", std::vector<double>{100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000}));
-
     incomingData = value.Value;
 
     if (auto pd = dataTree.root().lock()) {
-        StatsTimer t(dissect_timer);
+        if (reason == ProcessReason::incomingData)
+            newDataCounter->increment();
+        else if (reason == ProcessReason::readComplete)
+            readCounter->increment();
+        StatsTimer t(dissectTimer);
+
         const std::string *timefrom = nullptr;
         if (linkinfo.timestamp == LinkOptionTimestamp::data && linkinfo.timestampElement.length())
             timefrom = &linkinfo.timestampElement;
 
-        if (incomingData.type() == OpcUaType_ExtensionObject && !incomingData.isArray()) {
+        if (incomingData.type() == OpcUaType_ExtensionObject) {
             UaExtensionObject eo;
             incomingData.toExtensionObject(eo);
             pd->setIncomingData(eo, reason, timefrom, typeId);
@@ -194,7 +220,8 @@ ItemUaSdk::setIncomingData (const OpcUa_DataValue &value, ProcessReason reason, 
     }
 
     if (linkinfo.isItemRecord) {
-        if (recConnector->state() == ConnectionStatus::initialRead && reason == ProcessReason::readComplete
+        if (recConnector->state() == ConnectionStatus::initialRead
+            && reason == ProcessReason::readComplete
             && recConnector->bini() == LinkOptionBini::write) {
             recConnector->setState(ConnectionStatus::initialWrite);
             recConnector->requestRecordProcessing(ProcessReason::writeRequest);

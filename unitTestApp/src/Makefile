@@ -19,8 +19,6 @@ CLIENT_SRC = $(DEVSUP_SRC)/$(CLIENT_SUBDIR)
 
 # Add client specific tests
 SRC_DIRS += $(TESTSRC)/$(CLIENT_SUBDIR)
-# Location of the library classes under test
-SRC_DIRS += $(DEVSUP_SRC) $(CLIENT_SRC)
 USR_INCLUDES += -I$(DEVSUP_SRC) -I$(CLIENT_SRC)
 
 ifeq ($(CLIENT)_USE_CRYPTO),YES)
@@ -34,10 +32,6 @@ USR_INCLUDES += -I$(MSYSTEM_PREFIX)/include/libxml2
 USR_SYS_LIBS += xml2
 endif
 endif
-
-# Link explicitly against locally compiled library objects
-OPCUA_OBJS += linkParser iocshIntegration $($(CLIENT)_OPCUA_OBJS)
-OPCUA_OBJS += RecordConnector Session Subscription Stats
 
 #==================================================
 # Build tests executables
@@ -60,16 +54,12 @@ GTESTS += RegistryTest
 
 GTESTPROD_HOST += LinkParserTest
 LinkParserTest_SRCS += LinkParserTest.cpp
-LinkParserTest_LIBS += $($(CLIENT)_LIBS) $(EPICS_BASE_IOC_LIBS)
-LinkParserTest_SYS_LIBS_Linux += $(OPCUA_SYS_LIBS_Linux)
-LinkParserTest_OBJS += $(OPCUA_OBJS)
+LinkParserTest_LIBS += opcua
 GTESTS += LinkParserTest
 
 GTESTPROD_HOST += ElementTreeTest
 ElementTreeTest_SRCS += ElementTreeTest.cpp
-ElementTreeTest_LIBS += $($(CLIENT)_LIBS) $(EPICS_BASE_IOC_LIBS)
-ElementTreeTest_SYS_LIBS_Linux += $(OPCUA_SYS_LIBS_Linux)
-ElementTreeTest_OBJS += $(OPCUA_OBJS)
+ElementTreeTest_LIBS += opcua
 GTESTS += ElementTreeTest
 
 #==================================================

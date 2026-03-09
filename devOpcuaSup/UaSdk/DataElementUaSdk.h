@@ -81,6 +81,7 @@ public:
         : name(name)
         , pitem(pitem)
         , outgoingLock(pitem->dataTreeWriteLock)
+        , isdirty(false)
     {}
     virtual ~DataElementUaSdk();
 
@@ -146,26 +147,33 @@ public:
     virtual void setState(const ConnectionStatus state) = 0;
 
     /**
-     * @brief Assemble the outgoing data value for the DataElement.
+     * @brief Update the outgoing data value from the DataElement.
      *
      * Called from the OPC UA client worker thread when data is being
      * assembled in OPC UA session for sending.
      *
-     * @param[in]  base  latest incoming value (base for assembly)
-     * @param[out] out   resulting outgoing value
+     * @param value  data value to be updated (in-place)
+     * @return  true if value was updated
      */
-    virtual void fillOutgoingData(const UaVariant &base, UaVariant &out) = 0;
+    virtual bool updateOutgoingData(UaVariant &value) = 0;
 
     /**
-     * @brief Assemble the outgoing data value (structured) for the DataElement.
+     * @brief Update the outgoing data value (structured) from the DataElement.
      *
-     * Called from the OPC UA client worker thread when structured data is
-     * being assembled in OPC UA session for sending.
+     * Called from the OPC UA client worker thread when structured data
+     * is being assembled in OPC UA session for sending.
      *
-     * @param[in]  base  latest incoming value (base for assembly)
-     * @param[out] out   resulting outgoing value
+     * @param value  structured data value to be updated (in-place)
+     * @return  true if value was updated
      */
-    virtual void fillOutgoingData(const UaExtensionObject &base, UaExtensionObject &out) = 0;
+    virtual bool updateOutgoingData(UaExtensionObject &value) = 0;
+
+    /**
+     * @brief Get the outgoing data value from the DataElement.
+     *
+     * @return  reference to outgoing data
+     */
+    virtual const UaVariant &getOutgoingData() = 0;
 
     /**
      * @brief Clear (discard) the current outgoing data.
@@ -200,6 +208,10 @@ private:
 protected:
     ItemUaSdk *pitem;                             /**< corresponding item */
     std::shared_ptr<DataElementUaSdk> parent;     /**< parent */
+
+    OpcUa_BuiltInType dataType;                   /**< data type */
+    OpcUa_Boolean isArray;                        /**< true if array */
+    UaNodeId encodingTypeId;                      /**< encoding type id (if structured) */
 
     epicsMutex &outgoingLock; /**< data lock for outgoing value */
     UaVariant outgoingData;   /**< cache of latest outgoing value */
