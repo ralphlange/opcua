@@ -879,7 +879,7 @@ private:
     {
         long ret = 1;
 
-        switch (incomingData.type()) {
+        switch (dataType) {
         case OpcUaType_Boolean: { // Scope of Guard G
             Guard G(outgoingLock);
             outgoingData.setBoolean(value != 0);
@@ -978,7 +978,7 @@ private:
             errlogPrintf("%s : unsupported conversion from %s to %s for outgoing data\n",
                          prec->name,
                          epicsTypeString(value),
-                         variantTypeString(incomingData.type()));
+                         variantTypeString(dataType));
             (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
         }
         if (ret != 0) {

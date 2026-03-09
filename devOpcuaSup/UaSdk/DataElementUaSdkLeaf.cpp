@@ -1062,6 +1062,11 @@ DataElementUaSdkLeaf::writeScalar(const char *value, epicsUInt32 len, dbCommon *
     OpcUa_BuiltInType type = dataType;
 
     if (type == OpcUaType_ExtensionObject) {
+        if (pitem->incomingData.type() == OpcUaType_Null) {
+            errlogPrintf("%s : cannot write to structure - no incoming data yet to determine type\n", prec->name);
+            (void) recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
+            return 1;
+        }
         UaExtensionObject extensionObject;
         pitem->incomingData.toExtensionObject(extensionObject);
         UaStructureDefinition definition = pitem->structureDefinition(extensionObject.encodingTypeId());
@@ -1123,7 +1128,8 @@ DataElementUaSdkLeaf::writeScalar(const char *value, epicsUInt32 len, dbCommon *
             value = sep + 1;
             len -= static_cast<epicsUInt32>(sep + 1 - value);
         } else { // keep the locale
-            pitem->incomingData.toLocalizedText(localizedText);
+            if (pitem->incomingData.type() == OpcUaType_LocalizedText)
+                pitem->incomingData.toLocalizedText(localizedText);
         }
         localizedText.setText(UaByteString(len, (OpcUa_Byte *) value));
         outgoingData.setLocalizedText(localizedText);
@@ -1141,8 +1147,12 @@ DataElementUaSdkLeaf::writeScalar(const char *value, epicsUInt32 len, dbCommon *
             value = sep + 1;
             len -= static_cast<epicsUInt32>(sep + 1 - value);
         } else { // keep the namespace
-            pitem->incomingData.toQualifiedName(qualifiedName);
-            nsIndex = qualifiedName.namespaceIndex();
+            if (pitem->incomingData.type() == OpcUaType_QualifiedName) {
+                pitem->incomingData.toQualifiedName(qualifiedName);
+                nsIndex = qualifiedName.namespaceIndex();
+            } else {
+                nsIndex = 0;
+            }
         }
         qualifiedName = UaQualifiedName(UaByteString(len, (OpcUa_Byte *) value), nsIndex);
         outgoingData.setQualifiedName(qualifiedName);
@@ -1350,9 +1360,12 @@ DataElementUaSdkLeaf::writeArray(
         }
         case OpcUaType_LocalizedText: {
             UaLocalizedTextArray arr;
-            OpcUa_UInt32 arraySize = pitem->incomingData.arraySize();
-            const OpcUa_LocalizedText *incoming
-                = static_cast<const OpcUa_Variant *>(pitem->incomingData)->Value.Array.Value.LocalizedTextArray;
+            OpcUa_UInt32 arraySize = 0;
+            const OpcUa_LocalizedText *incoming = nullptr;
+            if (pitem->incomingData.type() == OpcUaType_LocalizedText && pitem->incomingData.isArray()) {
+                arraySize = pitem->incomingData.arraySize();
+                incoming = static_cast<const OpcUa_Variant *>(pitem->incomingData)->Value.Array.Value.LocalizedTextArray;
+            }
 
             arr.create(num);
             for (epicsUInt32 i = 0; i < num; i++) {
@@ -1386,9 +1399,12 @@ DataElementUaSdkLeaf::writeArray(
         }
         case OpcUaType_QualifiedName: {
             UaQualifiedNameArray arr;
-            OpcUa_UInt32 arraySize = pitem->incomingData.arraySize();
-            const OpcUa_QualifiedName *incoming
-                = static_cast<const OpcUa_Variant *>(pitem->incomingData)->Value.Array.Value.QualifiedNameArray;
+            OpcUa_UInt32 arraySize = 0;
+            const OpcUa_QualifiedName *incoming = nullptr;
+            if (pitem->incomingData.type() == OpcUaType_QualifiedName && pitem->incomingData.isArray()) {
+                arraySize = pitem->incomingData.arraySize();
+                incoming = static_cast<const OpcUa_Variant *>(pitem->incomingData)->Value.Array.Value.QualifiedNameArray;
+            }
 
             arr.create(num);
             for (epicsUInt32 i = 0; i < num; i++) {

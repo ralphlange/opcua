@@ -19,6 +19,7 @@
 namespace {
 
 using namespace DevOpcua;
+
 using namespace testing;
 
 class TestBase
