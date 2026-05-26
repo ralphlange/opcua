@@ -19,6 +19,7 @@ CLIENT_SRC = $(DEVSUP_SRC)/$(CLIENT_SUBDIR)
 
 # Add client specific tests
 SRC_DIRS += $(TESTSRC)/$(CLIENT_SUBDIR)
+SRC_DIRS += $(DEVSUP_SRC)
 USR_INCLUDES += -I$(DEVSUP_SRC) -I$(CLIENT_SRC)
 
 ifeq ($(CLIENT)_USE_CRYPTO),YES)
@@ -61,6 +62,11 @@ GTESTPROD_HOST += ElementTreeTest
 ElementTreeTest_SRCS += ElementTreeTest.cpp
 ElementTreeTest_LIBS += opcua
 GTESTS += ElementTreeTest
+
+GTESTPROD_HOST += StatsTest
+StatsTest_SRCS += StatsTest.cpp
+StatsTest_SRCS += Stats.cpp
+GTESTS += StatsTest
 
 #==================================================
 # Tests for different client libraries
