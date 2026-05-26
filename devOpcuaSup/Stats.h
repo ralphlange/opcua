@@ -22,10 +22,10 @@
 #include <epicsGuard.h>
 #include <epicsMutex.h>
 
+namespace DevOpcua {
+
 typedef epicsGuard<epicsMutex> Guard;
 typedef epicsGuardRelease<epicsMutex> UnGuard;
-
-namespace DevOpcua {
 
 /**
  * @brief A simple thread-safe counter.

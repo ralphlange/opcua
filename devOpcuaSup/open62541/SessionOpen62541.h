@@ -14,7 +14,7 @@
 #define DEVOPCUA_SESSIONOPEN62541_H
 
 #include "Session.h"
-#include "Registry.h"
+#include "DevOpcuaRegistry.h"
 #include "RequestQueueBatcher.h"
 
 #include <epicsMutex.h>

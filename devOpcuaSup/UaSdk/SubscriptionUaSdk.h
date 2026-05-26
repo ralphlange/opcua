@@ -27,7 +27,7 @@
 
 #include "SessionUaSdk.h"
 #include "Subscription.h"
-#include "Registry.h"
+#include "DevOpcuaRegistry.h"
 
 namespace DevOpcua {
 

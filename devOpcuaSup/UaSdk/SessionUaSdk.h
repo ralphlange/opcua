@@ -32,7 +32,7 @@
 
 #include "RequestQueueBatcher.h"
 #include "Session.h"
-#include "Registry.h"
+#include "DevOpcuaRegistry.h"
 #include "DataElement.h"
 
 namespace DevOpcua {

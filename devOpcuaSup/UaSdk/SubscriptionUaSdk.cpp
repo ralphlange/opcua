@@ -33,7 +33,7 @@
 #include "SubscriptionUaSdk.h"
 #include "RecordConnector.h"
 #include "DataElementUaSdk.h"
-#include "Registry.h"
+#include "DevOpcuaRegistry.h"
 #include "devOpcua.h"
 
 namespace DevOpcua {
