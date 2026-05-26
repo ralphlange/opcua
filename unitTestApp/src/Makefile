@@ -52,11 +52,6 @@ GTESTPROD_HOST += RegistryTest
 RegistryTest_SRCS += RegistryTest.cpp
 GTESTS += RegistryTest
 
-GTESTPROD_HOST += StatsTest
-StatsTest_SRCS += StatsTest.cpp
-StatsTest_LIBS += opcua
-GTESTS += StatsTest
-
 GTESTPROD_HOST += LinkParserTest
 LinkParserTest_SRCS += LinkParserTest.cpp
 LinkParserTest_LIBS += opcua

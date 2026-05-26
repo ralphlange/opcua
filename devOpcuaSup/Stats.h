@@ -8,8 +8,8 @@
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  */
 
-#ifndef STATS_H
-#define STATS_H
+#ifndef DEVOPCUA_STATS_H
+#define DEVOPCUA_STATS_H
 
 #include <atomic>
 #include <chrono>
@@ -169,8 +169,8 @@ public:
     /**
      * @brief Prints a report of all matching statistics to the given output stream.
      * @param os Output stream to print to.
-     * @param verbosity Amount of printed information.
      * @param pattern Glob pattern to match.
+     * @param verbosity Amount of printed information.
      */
     void report(std::ostream &os, int verbosity = 0, const std::string &pattern = "*") const;
 
@@ -191,4 +191,4 @@ private:
 
 } // namespace DevOpcua
 
-#endif // STATS_H
+#endif // DEVOPCUA_STATS_H

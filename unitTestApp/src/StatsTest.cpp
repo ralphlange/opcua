@@ -8,6 +8,7 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 #include "Stats.h"
 
@@ -119,8 +120,6 @@ TEST(StatsHistogramTest, ResetFix) {
     std::stringstream ss2;
     hist.print(ss2);
     // After reset, all counts should be 0.
-    // The print format is "   <=   10 us: 1"
-    // We expect "   <=   10 us: 0"
     EXPECT_EQ(ss2.str().find(": 1"), std::string::npos);
     EXPECT_NE(ss2.str().find(": 0"), std::string::npos);
 }
