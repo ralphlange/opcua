@@ -34,6 +34,7 @@
 #include "Subscription.h"
 #include "Registry.h"
 #include "RecordConnector.h"
+#include "Stats.h"
 
 namespace DevOpcua {
 
@@ -374,11 +375,11 @@ const char opcuaShowUsage[]
       "verbosity  amount of printed information (default 0 = sparse)\n";
 
 static const iocshFuncDef opcuaShowFuncDef = {"opcuaShow",
-                                              2,
-                                              opcuaShowArg
+    2,
+    opcuaShowArg
 #ifdef IOCSHFUNCDEF_HAS_USAGE
-                                              ,
-                                              opcuaShowUsage
+    ,
+    opcuaShowUsage
 #endif
 };
 
@@ -413,6 +414,57 @@ opcuaShowCallFunc(const iocshArgBuf *args)
         }
         if (!foundSomething)
             errlogPrintf("No matches for pattern '%s'\n", args[0].sval);
+    }
+}
+
+static const iocshArg opcuaStatsArg0 = {"pattern", iocshArgString};
+static const iocshArg opcuaStatsArg1 = {"verbosity", iocshArgInt};
+
+static const iocshArg *const opcuaStatsArg[2] = {&opcuaStatsArg0, &opcuaStatsArg1};
+
+const char opcuaStatsUsage[]
+    = "Prints statistics about sessions, subscriptions, items and their related data elements.\n\n"
+      "pattern    glob pattern (supports * and ?) for statistics item (default *)\n"
+      "verbosity  amount of printed information (default 0 = sparse)\n";
+
+static const iocshFuncDef opcuaStatsFuncDef = {"opcuaStats",
+                                               2,
+                                               opcuaStatsArg
+#ifdef IOCSHFUNCDEF_HAS_USAGE
+                                               ,
+                                               opcuaStatsUsage
+#endif
+};
+
+static void opcuaStatsCallFunc(const iocshArgBuf *args)
+{
+    std::string glob = (args[0].sval == NULL || args[0].sval[0] == '\0') ? "*" : args[0].sval;
+    StatsManager::getInstance().report(std::cout, args[1].ival, glob);
+}
+
+static const iocshArg opcuaStatsResetArg0 = {"pattern", iocshArgString};
+
+static const iocshArg *const opcuaStatsResetArg[1] = {&opcuaStatsResetArg0};
+
+const char opcuaStatsResetUsage[]
+    = "Resets statistics for matching items.\n\n"
+      "pattern    glob pattern (supports * and ?) for statistics item (default all)\n";
+
+static const iocshFuncDef opcuaStatsResetFuncDef = {"opcuaStatsReset",
+                                                    1,
+                                                    opcuaStatsResetArg
+#ifdef IOCSHFUNCDEF_HAS_USAGE
+                                                    ,
+                                                    opcuaStatsResetUsage
+#endif
+};
+
+static void opcuaStatsResetCallFunc(const iocshArgBuf *args)
+{
+    if (args[0].sval == NULL || args[0].sval[0] == '\0') {
+        StatsManager::getInstance().reset_all();
+    } else {
+        StatsManager::getInstance().reset(args[0].sval);
     }
 }
 
@@ -1085,6 +1137,8 @@ void opcuaIocshRegister ()
     iocshRegister(&opcuaSubscriptionFuncDef, opcuaSubscriptionCallFunc);
     iocshRegister(&opcuaOptionsFuncDef, opcuaOptionsCallFunc);
     iocshRegister(&opcuaShowFuncDef, opcuaShowCallFunc);
+    iocshRegister(&opcuaStatsFuncDef, opcuaStatsCallFunc);
+    iocshRegister(&opcuaStatsResetFuncDef, opcuaStatsResetCallFunc);
 
     iocshRegister(&opcuaConnectFuncDef, opcuaConnectCallFunc);
     iocshRegister(&opcuaDisconnectFuncDef, opcuaDisconnectCallFunc);
