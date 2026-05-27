@@ -10,6 +10,7 @@
 
 #include "Stats.h"
 
+#include <algorithm>
 #include <iomanip>
 
 #include <epicsString.h>
@@ -72,6 +73,94 @@ void StatsHistogram::print(std::ostream &os) const
 }
 
 void StatsHistogram::reset() {}
+
+StatsSlidingAverage::StatsSlidingAverage(size_t windowSize)
+    : windowSize(windowSize > 0 ? windowSize : 1)
+    , nextIndex(0)
+    , count(0)
+{
+    buffer.resize(this->windowSize);
+}
+
+void StatsSlidingAverage::record(double value)
+{
+    Guard G(lock);
+    buffer[nextIndex] = value;
+    nextIndex = (nextIndex + 1) % windowSize;
+    if (count < windowSize)
+        count++;
+}
+
+void StatsSlidingAverage::reset()
+{
+    Guard G(lock);
+    nextIndex = 0;
+    count = 0;
+}
+
+double StatsSlidingAverage::getAverage() const
+{
+    Guard G(lock);
+    if (count == 0)
+        return 0.0;
+    double sum = 0.0;
+    for (size_t i = 0; i < count; ++i) {
+        sum += buffer[i];
+    }
+    return sum / count;
+}
+
+double StatsSlidingAverage::getMedian() const
+{
+    Guard G(lock);
+    if (count == 0)
+        return 0.0;
+    std::vector<double> sorted(buffer.begin(), buffer.begin() + count);
+    std::sort(sorted.begin(), sorted.end());
+    if (count % 2 == 0) {
+        return (sorted[count / 2 - 1] + sorted[count / 2]) / 2.0;
+    } else {
+        return sorted[count / 2];
+    }
+}
+
+double StatsSlidingAverage::getMin() const
+{
+    Guard G(lock);
+    if (count == 0)
+        return 0.0;
+    double minVal = buffer[0];
+    for (size_t i = 1; i < count; ++i) {
+        if (buffer[i] < minVal)
+            minVal = buffer[i];
+    }
+    return minVal;
+}
+
+double StatsSlidingAverage::getMax() const
+{
+    Guard G(lock);
+    if (count == 0)
+        return 0.0;
+    double maxVal = buffer[0];
+    for (size_t i = 1; i < count; ++i) {
+        if (buffer[i] > maxVal)
+            maxVal = buffer[i];
+    }
+    return maxVal;
+}
+
+void StatsSlidingAverage::print(std::ostream &os, int verbosity) const
+{
+    Guard G(lock);
+    os << "    Average: " << getAverage() << std::endl;
+    if (verbosity > 0) {
+        os << "    Median:  " << getMedian() << std::endl;
+        os << "    Min:     " << getMin() << std::endl;
+        os << "    Max:     " << getMax() << std::endl;
+        os << "    Count:   " << count << " (window: " << windowSize << ")" << std::endl;
+    }
+}
 
 StatsExecTime::StatsExecTime(const std::vector<double> &buckets)
     : totalExecutionTime(0)
@@ -158,10 +247,19 @@ std::shared_ptr<StatsExecTime> StatsManager::getExecutionStats(
         execTimes[name] = std::make_shared<StatsExecTime>(histogram_buckets);
     }
     return execTimes[name];
-
 }
 
-void StatsManager::report(std::ostream &os, const std::string &pattern) const
+std::shared_ptr<StatsSlidingAverage> StatsManager::getSlidingAverage(
+    const std::string &name, size_t windowSize)
+{
+    Guard G(lock);
+    if (slidingAverages.find(name) == slidingAverages.end()) {
+        slidingAverages[name] = std::make_shared<StatsSlidingAverage>(windowSize);
+    }
+    return slidingAverages[name];
+}
+
+void StatsManager::report(std::ostream &os, int verbosity, const std::string &pattern) const
 {
     Guard G(lock);
     os << "--- Statistics Report ---" << std::endl;
@@ -180,18 +278,31 @@ void StatsManager::report(std::ostream &os, const std::string &pattern) const
         }
     }
 
-    os << "-------------------------" << std::endl;
+    os << "\n-- Sliding Averages --" << std::endl;
+    for (const auto &pair : slidingAverages) {
+        if (epicsStrGlobMatch(pair.first.c_str(), pattern.c_str())) {
+            os << pair.first << ":" << std::endl;
+            pair.second->print(os, verbosity);
+        }
+    }
 
+    os << "-------------------------" << std::endl;
 }
 
 void StatsManager::reset(const std::string &name)
 {
     Guard G(lock);
-    if (counters.count(name)) {
-        counters[name]->reset();
+    for (auto &pair : counters) {
+        if (epicsStrGlobMatch(pair.first.c_str(), name.c_str()))
+            pair.second->reset();
     }
-    if (execTimes.count(name)) {
-        execTimes[name]->reset();
+    for (auto &pair : execTimes) {
+        if (epicsStrGlobMatch(pair.first.c_str(), name.c_str()))
+            pair.second->reset();
+    }
+    for (auto &pair : slidingAverages) {
+        if (epicsStrGlobMatch(pair.first.c_str(), name.c_str()))
+            pair.second->reset();
     }
 }
 
@@ -202,6 +313,9 @@ void StatsManager::reset_all()
         pair.second->reset();
     }
     for (auto &pair : execTimes) {
+        pair.second->reset();
+    }
+    for (auto &pair : slidingAverages) {
         pair.second->reset();
     }
 }
