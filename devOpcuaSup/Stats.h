@@ -22,10 +22,10 @@
 #include <epicsGuard.h>
 #include <epicsMutex.h>
 
+namespace DevOpcua {
+
 typedef epicsGuard<epicsMutex> Guard;
 typedef epicsGuardRelease<epicsMutex> UnGuard;
-
-namespace DevOpcua {
 
 /**
  * @brief A simple thread-safe counter.
@@ -61,6 +61,32 @@ public:
 private:
     std::vector<double> buckets;
     std::vector<std::shared_ptr<std::atomic<long long>>> counts;
+};
+
+/**
+ * @brief A thread-safe sliding average collector.
+ */
+class StatsSlidingAverage
+{
+public:
+    StatsSlidingAverage(size_t windowSize);
+
+    void record(double value);
+    void reset();
+
+    double getAverage() const;
+    double getMedian() const;
+    double getMin() const;
+    double getMax() const;
+
+    void print(std::ostream &os, int verbosity = 0) const;
+
+private:
+    size_t windowSize;
+    std::vector<double> buffer;
+    size_t nextIndex;
+    size_t count;
+    mutable epicsMutex lock;
 };
 
 /**
@@ -132,11 +158,21 @@ public:
         const std::string &name, const std::vector<double> &histogram_buckets = {});
 
     /**
+     * @brief Gets or creates a named sliding average statistics collector.
+     * @param name Name of the sliding average statistics.
+     * @param windowSize Number of values to average over.
+     * @return A shared pointer to the SlidingAverage.
+     */
+    std::shared_ptr<StatsSlidingAverage> getSlidingAverage(
+        const std::string &name, size_t windowSize = 100);
+
+    /**
      * @brief Prints a report of all matching statistics to the given output stream.
      * @param os Output stream to print to.
-     * @param pattern Glob pattern to match
+     * @param verbosity Amount of printed information.
+     * @param pattern Glob pattern to match.
      */
-    void report(std::ostream &os, const std::string &pattern = "*") const;
+    void report(std::ostream &os, int verbosity = 0, const std::string &pattern = "*") const;
 
     void reset(const std::string &name);
     void reset_all();
@@ -150,6 +186,7 @@ private:
     mutable epicsMutex lock;
     std::unordered_map<std::string, std::shared_ptr<StatsCounter>> counters;
     std::unordered_map<std::string, std::shared_ptr<StatsExecTime>> execTimes;
+    std::unordered_map<std::string, std::shared_ptr<StatsSlidingAverage>> slidingAverages;
 };
 
 } // namespace DevOpcua
