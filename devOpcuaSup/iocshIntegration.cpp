@@ -439,11 +439,33 @@ static const iocshFuncDef opcuaStatsFuncDef = {"opcuaStats",
 
 static void opcuaStatsCallFunc(const iocshArgBuf *args)
 {
-    std::string glob;
+    std::string glob = (args[0].sval == NULL || args[0].sval[0] == '\0') ? "*" : args[0].sval;
+    StatsManager::getInstance().report(std::cout, args[1].ival, glob);
+}
+
+static const iocshArg opcuaStatsResetArg0 = {"pattern", iocshArgString};
+
+static const iocshArg *const opcuaStatsResetArg[1] = {&opcuaStatsResetArg0};
+
+const char opcuaStatsResetUsage[]
+    = "Resets statistics for matching items.\n\n"
+      "pattern    glob pattern (supports * and ?) for statistics item (default all)\n";
+
+static const iocshFuncDef opcuaStatsResetFuncDef = {"opcuaStatsReset",
+                                                    1,
+                                                    opcuaStatsResetArg
+#ifdef IOCSHFUNCDEF_HAS_USAGE
+                                                    ,
+                                                    opcuaStatsResetUsage
+#endif
+};
+
+static void opcuaStatsResetCallFunc(const iocshArgBuf *args)
+{
     if (args[0].sval == NULL || args[0].sval[0] == '\0') {
-        glob = "*";
+        StatsManager::getInstance().reset_all();
     } else {
-        StatsManager::getInstance().report(std::cout, std::string(args[0].sval));
+        StatsManager::getInstance().reset(args[0].sval);
     }
 }
 
@@ -1117,6 +1139,7 @@ void opcuaIocshRegister ()
     iocshRegister(&opcuaOptionsFuncDef, opcuaOptionsCallFunc);
     iocshRegister(&opcuaShowFuncDef, opcuaShowCallFunc);
     iocshRegister(&opcuaStatsFuncDef, opcuaStatsCallFunc);
+    iocshRegister(&opcuaStatsResetFuncDef, opcuaStatsResetCallFunc);
 
     iocshRegister(&opcuaConnectFuncDef, opcuaConnectCallFunc);
     iocshRegister(&opcuaDisconnectFuncDef, opcuaDisconnectCallFunc);
