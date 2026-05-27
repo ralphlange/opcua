@@ -72,6 +72,11 @@ ElementTreeTest_SYS_LIBS_Linux += $(OPCUA_SYS_LIBS_Linux)
 ElementTreeTest_OBJS += $(OPCUA_OBJS)
 GTESTS += ElementTreeTest
 
+GTESTPROD_HOST += StatsTest
+StatsTest_SRCS += StatsTest.cpp
+StatsTest_LIBS += opcua
+GTESTS += StatsTest
+
 #==================================================
 # Tests for different client libraries
 # are in separate directories, added by reading
@@ -95,7 +100,7 @@ ifdef UASDK
 # Try to fight DLL Hell by putting SSL DLLs next to the binaries
 
 SSLLIB_INSTALLS += $(foreach lib, $(UASDK_SSL_LIBS), \
-    $(SHRLIB_PREFIX)$(lib)$(SHRLIB_SUFFIX_BASE) )
+	$(SHRLIB_PREFIX)$(lib)$(SHRLIB_SUFFIX_BASE) )
 
 $(GTESTLISTS) : $(SSLLIB_INSTALLS)
 
