@@ -87,15 +87,21 @@ include $(TOP)/configure/RULES
 
 ifdef UASDK
 
-# Try to fight DLL Hell by putting SSL DLLs next to the binaries
+# Try to fight DLL Hell by putting SSL DLLs and the test DLLs next to the binaries
 
 SSLLIB_INSTALLS += $(foreach lib, $(UASDK_SSL_LIBS), \
-	$(SHRLIB_PREFIX)$(lib)$(SHRLIB_SUFFIX_BASE) )
+        $(SHRLIB_PREFIX)$(lib)$(SHRLIB_SUFFIX_BASE) )
 
-$(GTESTLISTS) : $(SSLLIB_INSTALLS)
+TESTLIB_INSTALLS += $(SHRLIB_PREFIX)opcua$(SHRLIB_SUFFIX_BASE)
+
+$(GTESTLISTS) : $(SSLLIB_INSTALLS) $(TESTLIB_INSTALLS)
 
 $(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE) : $(UASDK_SHRLIB_DIR)/$(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE)
 	@$(ECHO) "Installing shared library $@ from Unified Automation SDK"
+	$(INSTALL) -d -m 555 $< $(@D)
+
+$(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE) : $(INSTALL_SHRLIB)/$(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE)
+	@$(ECHO) "Installing shared library $@"
 	$(INSTALL) -d -m 555 $< $(@D)
 
 endif
