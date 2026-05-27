@@ -72,7 +72,12 @@ void StatsHistogram::print(std::ostream &os) const
        << std::endl;
 }
 
-void StatsHistogram::reset() {}
+void StatsHistogram::reset()
+{
+    for (auto &count : counts) {
+        count->store(0, std::memory_order_relaxed);
+    }
+}
 
 StatsSlidingAverage::StatsSlidingAverage(size_t windowSize)
     : windowSize(windowSize > 0 ? windowSize : 1)
