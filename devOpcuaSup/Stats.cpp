@@ -8,6 +8,7 @@
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  */
 
+#define epicsExportSharedSymbols
 #include "Stats.h"
 
 #include <algorithm>
