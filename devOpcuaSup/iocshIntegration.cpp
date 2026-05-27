@@ -26,15 +26,16 @@
 #include <errlog.h>
 #include <epicsThread.h>
 
-#include <epicsExport.h>  // defines epicsExportSharedSymbols
+#include <epicsExport.h> // defines epicsExportSharedSymbols
+
+#include "OpcuaRegistry.h"
+#include "RecordConnector.h"
+#include "Session.h"
+#include "Stats.h"
+#include "Subscription.h"
 #include "devOpcua.h"
 #include "iocshVariables.h"
 #include "linkParser.h"
-#include "Session.h"
-#include "Subscription.h"
-#include "Registry.h"
-#include "RecordConnector.h"
-#include "Stats.h"
 
 namespace DevOpcua {
 
