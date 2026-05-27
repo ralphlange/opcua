@@ -100,7 +100,7 @@ $(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE) : $(UASDK_SHRLIB_DIR)/$(SHRLIB_PREFIX)%$(
 	@$(ECHO) "Installing shared library $@ from Unified Automation SDK"
 	$(INSTALL) -d -m 555 $< $(@D)
 
-$(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE) : $(INSTALL_SHRLIB)/$(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE)
+$(SHRLIB_PREFIX)opcua$(SHRLIB_SUFFIX_BASE) : $(INSTALL_SHRLIB)/$(SHRLIB_PREFIX)opcua$(SHRLIB_SUFFIX_BASE)
 	@$(ECHO) "Installing shared library $@"
 	$(INSTALL) -d -m 555 $< $(@D)
 
