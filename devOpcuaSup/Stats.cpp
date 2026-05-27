@@ -8,12 +8,14 @@
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  */
 
-#include "Stats.h"
-
 #include <algorithm>
 #include <iomanip>
 
 #include <epicsString.h>
+#include <shareLib.h>
+
+#define epicsExportSharedSymbols
+#include "Stats.h"
 
 namespace DevOpcua {
 

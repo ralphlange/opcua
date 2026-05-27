@@ -25,10 +25,11 @@
 #include <uasession.h>
 #include <uaenumdefinition.h>
 
-#include <epicsString.h>
 #include <epicsMutex.h>
+#include <epicsString.h>
 #include <epicsTypes.h>
 #include <initHooks.h>
+#include <shareLib.h>
 
 #include "DataElement.h"
 #include "OpcuaRegistry.h"
@@ -63,11 +64,11 @@ enum RequestedSecurityMode { Best, None, Sign, SignAndEncrypt };
  * and freeing all related resources on both server and client.
  */
 
-class SessionUaSdk
-        : public UaSessionCallback
-        , public Session
-        , public RequestConsumer<WriteRequest>
-        , public RequestConsumer<ReadRequest>
+class epicsShareClass SessionUaSdk
+    : public UaSessionCallback
+    , public Session
+    , public RequestConsumer<WriteRequest>
+    , public RequestConsumer<ReadRequest>
 {
     UA_DISABLE_COPY(SessionUaSdk);
     friend class SubscriptionUaSdk;

@@ -21,6 +21,7 @@
 
 #include <epicsGuard.h>
 #include <epicsMutex.h>
+#include <shareLib.h>
 
 namespace DevOpcua {
 
@@ -30,7 +31,7 @@ typedef epicsGuardRelease<epicsMutex> UnGuard;
 /**
  * @brief A simple thread-safe counter.
  */
-class StatsCounter
+class epicsShareClass StatsCounter
 {
 public:
     StatsCounter();
@@ -48,7 +49,7 @@ private:
 /**
  * @brief A thread-safe histogram for storing execution time distributions.
  */
-class StatsHistogram
+class epicsShareClass StatsHistogram
 {
 public:
     StatsHistogram(const std::vector<double> &buckets);
@@ -66,7 +67,7 @@ private:
 /**
  * @brief A thread-safe sliding average collector.
  */
-class StatsSlidingAverage
+class epicsShareClass StatsSlidingAverage
 {
 public:
     StatsSlidingAverage(size_t windowSize);
@@ -92,7 +93,7 @@ private:
 /**
  * @brief Collects and calculates statistics for execution times.
  */
-class StatsExecTime
+class epicsShareClass StatsExecTime
 {
 public:
     StatsExecTime(const std::vector<double> &buckets);
@@ -114,7 +115,7 @@ private:
 /**
  * @brief An RAII-style timer to measure execution time of a scope.
  */
-class StatsTimer
+class epicsShareClass StatsTimer
 {
 public:
     explicit StatsTimer(std::shared_ptr<StatsExecTime> stats);
@@ -132,7 +133,7 @@ private:
  * Ensures that statistics are uniquely named
  * and that access to them is thread-safe.
  */
-class StatsManager
+class epicsShareClass StatsManager
 {
 public:
     /**
