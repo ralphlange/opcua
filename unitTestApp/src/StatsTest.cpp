@@ -9,12 +9,40 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 #include "Stats.h"
 
 namespace {
 
 using namespace DevOpcua;
+
+TEST(StatsCounterTest, InitialState) {
+    StatsCounter counter;
+    EXPECT_EQ(counter.get(), 0);
+}
+
+TEST(StatsCounterTest, Increment) {
+    StatsCounter counter;
+    counter.increment();
+    EXPECT_EQ(counter.get(), 1);
+    counter.increment(5);
+    EXPECT_EQ(counter.get(), 6);
+}
+
+TEST(StatsCounterTest, Set) {
+    StatsCounter counter;
+    counter.set(42);
+    EXPECT_EQ(counter.get(), 42);
+}
+
+TEST(StatsCounterTest, Reset) {
+    StatsCounter counter;
+    counter.set(100);
+    counter.reset();
+    EXPECT_EQ(counter.get(), 0);
+}
 
 TEST(StatsSlidingAverageTest, InitialState) {
     StatsSlidingAverage sa(5);
@@ -88,6 +116,93 @@ TEST(StatsSlidingAverageTest, Reset) {
     EXPECT_DOUBLE_EQ(sa.getAverage(), 30.0);
 }
 
+TEST(StatsHistogramTest, RecordAndDistribution) {
+    StatsHistogram hist({10.0, 20.0});
+    hist.record(5.0);  // bucket 0
+    hist.record(10.0); // bucket 0 (inclusive upper bound)
+    hist.record(15.0); // bucket 1
+    hist.record(20.0); // bucket 1
+    hist.record(25.0); // bucket 2
+
+    std::stringstream ss;
+    hist.print(ss);
+    std::string s = ss.str();
+    // Bucket <= 10: 2
+    // Bucket > 10 and <= 20: 2
+    // Bucket > 20: 1
+    EXPECT_NE(s.find("<=         10 us: 2"), std::string::npos);
+    EXPECT_NE(s.find(">         10 and <=         20 us: 2"), std::string::npos);
+    EXPECT_NE(s.find(">         20 us: 1"), std::string::npos);
+}
+
+TEST(StatsHistogramTest, Reset) {
+    StatsHistogram hist({10.0, 20.0});
+    hist.record(5.0);
+    hist.record(15.0);
+    hist.record(25.0);
+
+    hist.reset();
+    std::stringstream ss;
+    hist.print(ss);
+    std::string s = ss.str();
+    EXPECT_NE(s.find("<=         10 us: 0"), std::string::npos);
+    EXPECT_NE(s.find(">         10 and <=         20 us: 0"), std::string::npos);
+    EXPECT_NE(s.find(">         20 us: 0"), std::string::npos);
+}
+
+TEST(StatsExecTimeTest, RecordAndAverage) {
+    StatsExecTime et({10.0, 20.0});
+    et.record(10000); // 10 us
+    et.record(20000); // 20 us
+
+    EXPECT_EQ(et.getCount(), 2);
+    EXPECT_EQ(et.getTotalExecutionTimeNs(), 30000);
+    EXPECT_DOUBLE_EQ(et.getAverageTimeUs(), 15.0);
+}
+
+TEST(StatsExecTimeTest, Reset) {
+    StatsExecTime et({10.0, 20.0});
+    et.record(10000);
+    et.reset();
+    EXPECT_EQ(et.getCount(), 0);
+    EXPECT_EQ(et.getTotalExecutionTimeNs(), 0);
+    EXPECT_DOUBLE_EQ(et.getAverageTimeUs(), 0.0);
+}
+
+TEST(StatsTimerTest, Measure) {
+    auto et = std::make_shared<StatsExecTime>(std::vector<double>{1000.0});
+    {
+        StatsTimer timer(et);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    EXPECT_EQ(et->getCount(), 1);
+    EXPECT_GT(et->getTotalExecutionTimeNs(), 9000000); // At least 9ms
+}
+
+TEST(StatsManagerTest, CounterIntegration) {
+    StatsManager &mgr = StatsManager::getInstance();
+    auto c = mgr.getCounter("test.counter");
+    ASSERT_NE(c, nullptr);
+    c->increment(10);
+    EXPECT_EQ(mgr.getCounter("test.counter")->get(), 10);
+
+    std::stringstream ss;
+    mgr.report(ss, 0, "test.counter");
+    EXPECT_NE(ss.str().find("test.counter: 10"), std::string::npos);
+}
+
+TEST(StatsManagerTest, ExecutionStatsIntegration) {
+    StatsManager &mgr = StatsManager::getInstance();
+    auto et = mgr.getExecutionStats("test.exec", {100.0});
+    ASSERT_NE(et, nullptr);
+    et->record(50000); // 50 us
+
+    std::stringstream ss;
+    mgr.report(ss, 0, "test.exec");
+    EXPECT_NE(ss.str().find("test.exec:"), std::string::npos);
+    EXPECT_NE(ss.str().find("Average Time: 50 us"), std::string::npos);
+}
+
 TEST(StatsManagerTest, SlidingAverageIntegration) {
     StatsManager &mgr = StatsManager::getInstance();
     auto sa = mgr.getSlidingAverage("test.sa", 5);
@@ -106,22 +221,35 @@ TEST(StatsManagerTest, SlidingAverageIntegration) {
     EXPECT_DOUBLE_EQ(sa->getAverage(), 0.0);
 }
 
-TEST(StatsHistogramTest, ResetFix) {
-    StatsHistogram hist({10.0, 20.0});
-    hist.record(5.0);
-    hist.record(15.0);
-    hist.record(25.0);
+TEST(StatsManagerTest, ResetAll) {
+    StatsManager &mgr = StatsManager::getInstance();
+    auto c = mgr.getCounter("test.c1");
+    auto et = mgr.getExecutionStats("test.e1");
+    auto sa = mgr.getSlidingAverage("test.s1");
 
-    std::stringstream ss1;
-    hist.print(ss1);
-    EXPECT_NE(ss1.str().find(": 1"), std::string::npos);
+    c->set(1);
+    et->record(1000);
+    sa->record(10.0);
 
-    hist.reset();
-    std::stringstream ss2;
-    hist.print(ss2);
-    // After reset, all counts should be 0.
-    EXPECT_EQ(ss2.str().find(": 1"), std::string::npos);
-    EXPECT_NE(ss2.str().find(": 0"), std::string::npos);
+    mgr.reset_all();
+
+    EXPECT_EQ(c->get(), 0);
+    EXPECT_EQ(et->getCount(), 0);
+    EXPECT_DOUBLE_EQ(sa->getAverage(), 0.0);
+}
+
+TEST(StatsManagerTest, ReportPattern) {
+    StatsManager &mgr = StatsManager::getInstance();
+    mgr.getCounter("a.1")->set(1);
+    mgr.getCounter("a.2")->set(2);
+    mgr.getCounter("b.1")->set(3);
+
+    std::stringstream ss;
+    mgr.report(ss, 0, "a.*");
+    std::string s = ss.str();
+    EXPECT_NE(s.find("a.1: 1"), std::string::npos);
+    EXPECT_NE(s.find("a.2: 2"), std::string::npos);
+    EXPECT_EQ(s.find("b.1: 3"), std::string::npos);
 }
 
 } // namespace
