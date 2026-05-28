@@ -25,6 +25,8 @@
 #include <dbStaticLib.h>
 #include <dbAccess.h>
 
+#include <shareLib.h>
+
 namespace DevOpcua {
 
 class Item;
@@ -226,7 +228,7 @@ typedef std::unique_ptr<linkInfo> (*linkParserFunc)(dbCommon*, DBEntry&);
 /**
  * @brief Return the name of the low level client library.
  */
-const std::string &opcuaGetDriverName();
+epicsShareFunc const std::string &opcuaGetDriverName();
 
 #if defined(_WIN32)
 const char pathsep = '\\';

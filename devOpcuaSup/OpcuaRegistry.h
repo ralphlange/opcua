@@ -19,6 +19,8 @@
 #include <epicsGuard.h>
 #include <epicsString.h>
 
+#include <shareLib.h>
+
 namespace DevOpcua {
 
 /**
@@ -28,25 +30,25 @@ namespace DevOpcua {
  * names (keys) unique across multiple registries.
  */
 
-class RegistryKeyNamespace
+class epicsShareClass RegistryKeyNamespace
 {
 public:
     RegistryKeyNamespace() {}
 
-    void
+    epicsShareFunc void
     insert(const std::string name)
     {
         names.insert(name);
     }
 
-    bool
+    epicsShareFunc bool
     contains(const std::string &name)
     {
         return (names.find(name) != names.end());
     }
 
     epicsMutex lock;
-    static RegistryKeyNamespace global; ///< default global registry namespace
+    epicsShareFunc static RegistryKeyNamespace global; ///< default global registry namespace
 
 private:
     std::set<std::string> names;

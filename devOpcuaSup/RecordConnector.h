@@ -27,6 +27,8 @@
 #include <alarm.h>
 #include <menuPriority.h>
 
+#include <shareLib.h>
+
 #include "devOpcua.h"
 #include "DataElement.h"
 #include "Item.h"
@@ -34,7 +36,7 @@
 
 namespace DevOpcua {
 
-class RecordConnector
+class epicsShareClass RecordConnector
 {
 public:
     RecordConnector(dbCommon *prec);
@@ -129,7 +131,7 @@ public:
      * @param name  record name
      * @return pointer to record connector (nullptr if record not found)
      */
-    static RecordConnector *findRecordConnector(const std::string &name);
+    epicsShareFunc static RecordConnector *findRecordConnector(const std::string &name);
 
     /**
      * @brief Find record connector with record names matching a glob pattern.
@@ -137,7 +139,7 @@ public:
      * @param pattern  record name pattern to match
      * @return set of record connector pointers
      */
-    static std::set<RecordConnector *> glob(const std::string &pattern);
+    epicsShareFunc static std::set<RecordConnector *> glob(const std::string &pattern);
 
     epicsMutex lock;
     std::unique_ptr<linkInfo> plinkinfo;
