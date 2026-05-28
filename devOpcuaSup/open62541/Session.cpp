@@ -13,7 +13,7 @@
 #define epicsExportSharedSymbols
 #include "SessionOpen62541.h"
 #include "Session.h"
-#include "Registry.h"
+#include "OpcuaRegistry.h"
 #include "devOpcua.h"
 
 #include <epicsThread.h>

@@ -32,7 +32,7 @@
 #include "linkParser.h"
 #include "Session.h"
 #include "Subscription.h"
-#include "Registry.h"
+#include "OpcuaRegistry.h"
 #include "RecordConnector.h"
 
 namespace DevOpcua {
