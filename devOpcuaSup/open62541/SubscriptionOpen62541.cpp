@@ -14,7 +14,7 @@
 #include "SubscriptionOpen62541.h"
 #include "ItemOpen62541.h"
 #include "RecordConnector.h"
-#include "Registry.h"
+#include "OpcuaRegistry.h"
 #include "devOpcua.h"
 
 #include <errlog.h>

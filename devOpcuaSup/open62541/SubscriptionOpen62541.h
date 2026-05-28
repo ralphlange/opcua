@@ -14,7 +14,7 @@
 #define DEVOPCUA_SUBSCRIPTIONOPEN62541_H
 
 #include "Subscription.h"
-#include "Registry.h"
+#include "OpcuaRegistry.h"
 
 #include <open62541/client.h>
 

@@ -8,8 +8,8 @@
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  */
 
-#ifndef DEVOPCUA_REGISTRY_H
-#define DEVOPCUA_REGISTRY_H
+#ifndef DEVOPCUA_OPCUAREGISTRY_H
+#define DEVOPCUA_OPCUAREGISTRY_H
 
 #include <set>
 #include <map>
@@ -18,6 +18,8 @@
 #include <epicsMutex.h>
 #include <epicsGuard.h>
 #include <epicsString.h>
+
+#include <shareLib.h>
 
 namespace DevOpcua {
 
@@ -28,25 +30,25 @@ namespace DevOpcua {
  * names (keys) unique across multiple registries.
  */
 
-class RegistryKeyNamespace
+class epicsShareClass RegistryKeyNamespace
 {
 public:
     RegistryKeyNamespace() {}
 
-    void
+    epicsShareFunc void
     insert(const std::string name)
     {
         names.insert(name);
     }
 
-    bool
+    epicsShareFunc bool
     contains(const std::string &name)
     {
         return (names.find(name) != names.end());
     }
 
     epicsMutex lock;
-    static RegistryKeyNamespace global; ///< default global registry namespace
+    epicsShareFunc static RegistryKeyNamespace global; ///< default global registry namespace
 
 private:
     std::set<std::string> names;
@@ -158,4 +160,4 @@ private:
 
 } // namespace DevOpcua
 
-#endif // DEVOPCUA_REGISTRY_H
+#endif // DEVOPCUA_OPCUAREGISTRY_H

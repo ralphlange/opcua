@@ -48,6 +48,10 @@ GTESTPROD_HOST += RequestQueueBatcherTest
 RequestQueueBatcherTest_SRCS += RequestQueueBatcherTest.cpp
 GTESTS += RequestQueueBatcherTest
 
+GTESTPROD_HOST += AdaptiveConcurrencyTest
+AdaptiveConcurrencyTest_SRCS += AdaptiveConcurrencyTest.cpp
+GTESTS += AdaptiveConcurrencyTest
+
 GTESTPROD_HOST += RegistryTest
 RegistryTest_SRCS += RegistryTest.cpp
 GTESTS += RegistryTest

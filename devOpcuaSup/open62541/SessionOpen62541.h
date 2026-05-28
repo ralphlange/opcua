@@ -14,7 +14,7 @@
 #define DEVOPCUA_SESSIONOPEN62541_H
 
 #include "Session.h"
-#include "Registry.h"
+#include "OpcuaRegistry.h"
 #include "RequestQueueBatcher.h"
 
 #include <epicsMutex.h>
@@ -427,6 +427,8 @@ private:
     unsigned int readNodesMax;                                    /**< max number of nodes per read request */
     unsigned int readTimeoutMin;                                  /**< timeout after read request batch of 1 node [ms] */
     unsigned int readTimeoutMax;                                  /**< timeout after read request batch of NodesMax nodes [ms] */
+    AdaptiveConcurrencyManager readAcm;                           /**< adaptive concurrency for read requests */
+    AdaptiveConcurrencyManager writeAcm;                          /**< adaptive concurrency for write requests */
 
     /** open62541 interfaces */
     UA_Client *client;                                            /**< low level handle for this session */

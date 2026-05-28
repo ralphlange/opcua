@@ -16,6 +16,7 @@
 #include <list>
 
 #include <dbCommon.h>
+#include <shareLib.h>
 
 #include "devOpcua.h"
 #include "RecordConnector.h"
@@ -24,7 +25,7 @@ namespace DevOpcua {
 
 static const char defaultElementDelimiter = '.';
 
-bool getYesNo(const char c);
+epicsShareFunc bool getYesNo(const char c);
 
 /**
  * @brief Split configuration string along delimiters into a list<string>.
@@ -37,10 +38,10 @@ bool getYesNo(const char c);
  *
  * @return  tokens in order of appearance as list<string>
  */
-std::list<std::string> splitString(const std::string &str,
+epicsShareFunc std::list<std::string> splitString(const std::string &str,
                                    const char delim = defaultElementDelimiter);
 
-std::unique_ptr<linkInfo> parseLink(dbCommon *prec, const DBEntry &ent);
+epicsShareFunc std::unique_ptr<linkInfo> parseLink(dbCommon *prec, const DBEntry &ent);
 
 } // namespace DevOpcua
 

@@ -168,6 +168,9 @@ SessionUaSdk::SessionUaSdk(const std::string &name,
     , readTimeoutMin(0)
     , readTimeoutMax(0)
 {
+    reader.setAdaptiveConcurrencyManager(&readAcm);
+    writer.setAdaptiveConcurrencyManager(&writeAcm);
+
     //TODO: allow overriding by env variable
     connectInfo.sApplicationName = "EPICS IOC";
     connectInfo.sApplicationUri  = UaString(applicationUri.c_str());
@@ -293,6 +296,26 @@ SessionUaSdk::setOption (const std::string &name, const std::string &value)
         max = connectInfo.nMaxOperationsPerServiceCall + writeNodesMax;
     }
     if (updateWriteBatcher) writer.setParams(max, writeTimeoutMin, writeTimeoutMax);
+
+    if (name == "read-acm-max") {
+        unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
+        readAcm.setParams(readAcm.getMinWindowSize(), (double)ul, readAcm.getResponseTimeThreshold());
+    } else if (name == "read-acm-threshold") {
+        unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
+        readAcm.setParams(readAcm.getMinWindowSize(), readAcm.getMaxWindowSize(), std::chrono::milliseconds(ul));
+    } else if (name == "read-acm-enable") {
+        if (value.length() > 0)
+            readAcm.setEnabled(getYesNo(value[0]));
+    } else if (name == "write-acm-max") {
+        unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
+        writeAcm.setParams(writeAcm.getMinWindowSize(), (double)ul, writeAcm.getResponseTimeThreshold());
+    } else if (name == "write-acm-threshold") {
+        unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
+        writeAcm.setParams(writeAcm.getMinWindowSize(), writeAcm.getMaxWindowSize(), std::chrono::milliseconds(ul));
+    } else if (name == "write-acm-enable") {
+        if (value.length() > 0)
+            writeAcm.setEnabled(getYesNo(value[0]));
+    }
 }
 
 long
@@ -429,9 +452,11 @@ SessionUaSdk::processRequests(std::vector<std::shared_ptr<ReadRequest>> &batch)
                 "OPC UA session %s: (requestRead) beginRead service failed with status %s\n",
                 name.c_str(),
                 status.toString().toUtf8());
+            readAcm.requestFailed(id);
             //TODO: create writeFailure events for all items of the batch
             //	    item.setIncomingEvent(ProcessReason::readFailure);
         } else {
+            readAcm.requestSent(id);
             if (debug >= 5)
                 std::cout << "Session " << name.c_str() << ": (requestRead) beginRead service ok"
                           << " (transaction id " << id << "; retrieving " << nodesToRead.length()
@@ -486,9 +511,11 @@ SessionUaSdk::processRequests(std::vector<std::shared_ptr<WriteRequest>> &batch)
                 "OPC UA session %s: (requestWrite) beginWrite service failed with status %s\n",
                 name.c_str(),
                 status.toString().toUtf8());
+            writeAcm.requestFailed(id);
             //TODO: create writeFailure events for all items of the batch
             //	    item.setIncomingEvent(ProcessReason::writeFailure);
         } else {
+            writeAcm.requestSent(id);
             if (debug >= 5)
                 std::cout << "Session " << name.c_str() << ": (requestWrite) beginWrite service ok"
                           << " (transaction id " << id << "; writing " << nodesToWrite.length()
@@ -1010,6 +1037,8 @@ SessionUaSdk::markConnectionLoss()
 {
     reader.clear();
     writer.clear();
+    readAcm.reset();
+    writeAcm.reset();
     for (auto it : items) {
         it->setState(ConnectionStatus::down);
         it->setIncomingEvent(ProcessReason::connectionLoss);
@@ -1242,6 +1271,7 @@ SessionUaSdk::readComplete (OpcUa_UInt32 transactionId,
                      "with unknown transaction id %u - ignored\n",
                      name.c_str(), transactionId);
     } else if (result.isGood()) {
+        readAcm.requestCompleted(transactionId);
         if (debug >= 2)
             std::cout << "Session " << name.c_str()
                       << ": (readComplete) getting data for read service"
@@ -1275,6 +1305,7 @@ SessionUaSdk::readComplete (OpcUa_UInt32 transactionId,
         }
         outstandingOps.erase(it);
     } else {
+        readAcm.requestFailed(transactionId);
         if (debug)
             std::cout << "Session " << name.c_str()
                       << ": (readComplete) for read service"
@@ -1307,6 +1338,7 @@ SessionUaSdk::writeComplete (OpcUa_UInt32 transactionId,
                      "with unknown transaction id %u - ignored\n",
                      name.c_str(), transactionId);
     } else if (result.isGood()) {
+        writeAcm.requestCompleted(transactionId);
         if (debug >= 2)
             std::cout << "Session " << name.c_str()
                       << ": (writeComplete) getting results for write service"
@@ -1328,6 +1360,7 @@ SessionUaSdk::writeComplete (OpcUa_UInt32 transactionId,
         }
         outstandingOps.erase(it);
     } else {
+        writeAcm.requestFailed(transactionId);
         if (debug)
             std::cout << "Session " << name.c_str()
                       << ": (writeComplete) for write service"
