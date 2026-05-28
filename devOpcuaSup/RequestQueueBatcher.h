@@ -22,6 +22,7 @@
 #include <menuPriority.h>
 
 #include "devOpcua.h"
+#include "AdaptiveConcurrency.h"
 
 namespace DevOpcua {
 
@@ -207,6 +208,17 @@ public:
     }
 
     /**
+     * @brief Associate an AdaptiveConcurrencyManager.
+     *
+     * @param manager  pointer to the manager (nullptr to disable)
+     */
+    void setAdaptiveConcurrencyManager(AdaptiveConcurrencyManager *manager)
+    {
+        Guard G(paramLock);
+        adaptiveConcurrencyManager = manager;
+    }
+
+    /**
      * @brief Get maxRequestsPerBatch parameter.
      * @return current limit for requests per batch
      */
@@ -232,9 +244,18 @@ public:
         do {
             double holdOff;
             unsigned int max;
+            AdaptiveConcurrencyManager *manager;
 
             workToDo.wait();
             if (workerShutdown) break;
+
+            { // Scope for parameter guard
+                Guard G(paramLock);
+                manager = adaptiveConcurrencyManager;
+            }
+
+            if (manager)
+                manager->canSendRequest();
 
             { // Scope for cargo vector
                 std::vector<std::shared_ptr<T>> batch;
@@ -283,6 +304,7 @@ private:
     bool workerShutdown;
     RequestConsumer<T> &consumer;
     void (*sleep)(double);
+    AdaptiveConcurrencyManager *adaptiveConcurrencyManager = nullptr;
 };
 
 } // namespace DevOpcua

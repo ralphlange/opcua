@@ -92,6 +92,7 @@ OPEN62541_USE_XMLPARSER = YES'''.format(installdir))
                    '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
                    '-DUA_ENABLE_ENCRYPTION=OPENSSL',
                    '-DUA_ENABLE_ENCRYPTION_OPENSSL=ON',
+                   '-DUA_ENABLE_TYPEDESCRIPTION=ON',
                    '-DCMAKE_INSTALL_PREFIX={0}'.format(installdir)],
                    cwd=builddir)
 
