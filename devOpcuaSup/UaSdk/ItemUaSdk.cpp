@@ -11,6 +11,8 @@
  *  and example code from the Unified Automation C++ Based OPC UA Client SDK
  */
 
+#define epicsExportSharedSymbols
+
 #include "ItemUaSdk.h"
 
 #include <iostream>

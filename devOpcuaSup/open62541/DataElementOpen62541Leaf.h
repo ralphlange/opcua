@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -190,7 +191,7 @@ inline bool string_to(const std::string& s, epicsFloat64& value) {
  *
  * See DevOpcua::DataElement
  */
-class DataElementOpen62541Leaf
+class epicsShareClass DataElementOpen62541Leaf
     : public DataElement
     , public DataElementOpen62541
 {

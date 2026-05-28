@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2023 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -146,7 +147,7 @@ struct ClientSecurityInfo {
  * and freeing all related resources on both server and client.
  */
 
-class SessionOpen62541
+class epicsShareClass SessionOpen62541
         : public Session
         , public RequestConsumer<WriteRequest>
         , public RequestConsumer<ReadRequest>

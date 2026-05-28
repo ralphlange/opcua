@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -30,7 +31,7 @@ class DataElementOpen62541Node;
  *
  * See DevOpcua::Item
  */
-class ItemOpen62541 : public Item
+class epicsShareClass ItemOpen62541 : public Item
 {
     friend class DataElementOpen62541;
     friend class DataElementOpen62541Node;

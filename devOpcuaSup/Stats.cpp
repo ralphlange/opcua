@@ -4,11 +4,12 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+#define epicsExportSharedSymbols
+
 /*
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  */
 
-#define epicsExportSharedSymbols
 #include "Stats.h"
 
 #include <algorithm>

@@ -4,6 +4,8 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+#define epicsExportSharedSymbols
+
 /*
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  *
@@ -30,7 +32,6 @@
 #include <epicsEvent.h>
 #include <epicsThread.h>
 
-#define epicsExportSharedSymbols
 #include "devOpcua.h"
 #include "linkParser.h"
 #include "opcuaItemRecord.h"

@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -17,7 +18,7 @@
 
 namespace DevOpcua {
 
-class DataElementOpen62541Node : public DataElementOpen62541
+class epicsShareClass DataElementOpen62541Node : public DataElementOpen62541
 {
 public:
     DataElementOpen62541Node(const std::string &name,

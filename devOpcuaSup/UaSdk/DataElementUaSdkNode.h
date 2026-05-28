@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -24,7 +25,7 @@
 
 namespace DevOpcua {
 
-class DataElementUaSdkNode : public DataElementUaSdk
+class epicsShareClass DataElementUaSdkNode : public DataElementUaSdk
 {
 public:
     DataElementUaSdkNode(const std::string &name, class ItemUaSdk *pitem);

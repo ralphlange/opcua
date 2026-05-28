@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2021 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -63,7 +64,7 @@ enum RequestedSecurityMode { Best, None, Sign, SignAndEncrypt };
  * and freeing all related resources on both server and client.
  */
 
-class SessionUaSdk
+class epicsShareClass SessionUaSdk
         : public UaSessionCallback
         , public Session
         , public RequestConsumer<WriteRequest>

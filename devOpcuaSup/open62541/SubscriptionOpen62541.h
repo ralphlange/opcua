@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2021 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -34,7 +35,7 @@ class ItemOpen62541;
  *
  * The class provides all Subscription related services.
  */
-class SubscriptionOpen62541 : public Subscription
+class epicsShareClass SubscriptionOpen62541 : public Subscription
 {
     // Cannot copy a subscription
     SubscriptionOpen62541(const SubscriptionOpen62541 &);

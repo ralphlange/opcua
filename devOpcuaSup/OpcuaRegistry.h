@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2020-2021 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -28,7 +29,7 @@ namespace DevOpcua {
  * names (keys) unique across multiple registries.
  */
 
-class RegistryKeyNamespace
+class epicsShareClass RegistryKeyNamespace
 {
 public:
     RegistryKeyNamespace() {}

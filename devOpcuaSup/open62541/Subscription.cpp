@@ -4,6 +4,8 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+#define epicsExportSharedSymbols
+
 /*
  *  Author: Dirk Zimoch <dirk.zimoch@psi.ch>
  *
@@ -15,7 +17,6 @@
 #include <epicsThread.h>
 #include <epicsEvent.h>
 
-#define epicsExportSharedSymbols
 #include "Subscription.h"
 #include "SessionOpen62541.h"
 #include "SubscriptionOpen62541.h"

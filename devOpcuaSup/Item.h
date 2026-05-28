@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -28,7 +29,7 @@ class RecordConnector;
  *
  * The interface provides all item related configuration and functionality.
  */
-class Item
+class epicsShareClass Item
 {
 public:
     virtual ~Item() {}

@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2025 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -27,7 +28,7 @@
 
 namespace DevOpcua {
 
-class DataElementUaSdkNode;
+class epicsShareClass DataElementUaSdkNode;
 
 inline const char *
 variantTypeString (const OpcUa_BuiltInType type)
@@ -71,10 +72,10 @@ variantTypeString (const OpcUa_BuiltInType type)
  * See DevOpcua::DataElement
  *
  */
-class DataElementUaSdk
+class epicsShareClass DataElementUaSdk
 {
-    friend class DataElementUaSdkNode;
-    friend class DataElementUaSdkLeaf;
+    friend class epicsShareClass DataElementUaSdkNode;
+    friend class epicsShareClass DataElementUaSdkLeaf;
 
 public:
     DataElementUaSdk (const std::string &name, class ItemUaSdk *pitem)

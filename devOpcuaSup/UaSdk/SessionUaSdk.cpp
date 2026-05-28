@@ -4,6 +4,8 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+#define epicsExportSharedSymbols
+
 /*
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  *
@@ -44,7 +46,6 @@
 #include <initHooks.h>
 #include <errlog.h>
 
-#define epicsExportSharedSymbols
 #include "Session.h"
 #include "RecordConnector.h"
 #include "linkParser.h"

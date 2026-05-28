@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2019 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -42,7 +43,7 @@ struct linkInfo;
  *
  * See DevOpcua::Item
  */
-class ItemUaSdk : public Item
+class epicsShareClass ItemUaSdk : public Item
 {
     friend class DataElementUaSdk;
     friend class DataElementUaSdkNode;

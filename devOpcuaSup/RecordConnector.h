@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2020 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -34,7 +35,7 @@
 
 namespace DevOpcua {
 
-class RecordConnector
+class epicsShareClass RecordConnector
 {
 public:
     RecordConnector(dbCommon *prec);

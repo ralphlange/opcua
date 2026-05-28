@@ -4,6 +4,8 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+#define epicsExportSharedSymbols
+
 /*
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  *
@@ -15,7 +17,6 @@
 #include <epicsThread.h>
 #include <epicsEvent.h>
 
-#define epicsExportSharedSymbols
 #include "Subscription.h"
 #include "SubscriptionUaSdk.h"
 

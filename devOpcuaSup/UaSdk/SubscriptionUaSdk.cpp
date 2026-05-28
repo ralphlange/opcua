@@ -4,6 +4,7 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+
 /*
  *  Author: Ralph Lange <ralph.lange@gmx.de>
  *
@@ -11,6 +12,7 @@
  *  and example code from the Unified Automation C++ Based OPC UA Client SDK
  */
 
+#define epicsExportSharedSymbols
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -29,7 +31,6 @@
 #include <epicsThread.h>
 #include <epicsEvent.h>
 
-#define epicsExportSharedSymbols
 #include "DataElementUaSdk.h"
 #include "OpcuaRegistry.h"
 #include "RecordConnector.h"

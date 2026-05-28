@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2021 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -40,7 +41,7 @@ using namespace UaClientSdk;
  *
  * The class provides all Subscription related services.
  */
-class SubscriptionUaSdk : public UaSubscriptionCallback, public Subscription
+class epicsShareClass SubscriptionUaSdk : public UaSubscriptionCallback, public Subscription
 {
     UA_DISABLE_COPY(SubscriptionUaSdk);
 

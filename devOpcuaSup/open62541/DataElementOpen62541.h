@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2023 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -59,10 +60,10 @@ inline int typeKindOf(const UA_Variant& v)
  *
  * See DevOpcua::DataElement
  */
-class DataElementOpen62541
+class epicsShareClass DataElementOpen62541
 {
-    friend class DataElementOpen62541Node;
-    friend class DataElementOpen62541Leaf;
+    friend class epicsShareClass DataElementOpen62541Node;
+    friend class epicsShareClass DataElementOpen62541Leaf;
 
 public:
     DataElementOpen62541 (const std::string &name, class ItemOpen62541 *pitem)

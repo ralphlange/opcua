@@ -4,13 +4,14 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+#define epicsExportSharedSymbols
+
 /*
  *  Author: Dirk Zimoch <dirk.zimoch@psi.ch>
  *
  *  based on the UaSdk implementation by Ralph Lange <ralph.lange@gmx.de>
  */
 
-#define epicsExportSharedSymbols
 #include "SessionOpen62541.h"
 #include "Session.h"
 #include "OpcuaRegistry.h"

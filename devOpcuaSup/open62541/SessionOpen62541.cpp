@@ -4,6 +4,8 @@
 * in file LICENSE that is included with this distribution.
 \*************************************************************************/
 
+#define epicsExportSharedSymbols
+
 /*
  *  Author: Dirk Zimoch <dirk.zimoch@psi.ch>
  *
@@ -11,7 +13,6 @@
  *  and the custom type prototype by Carsten Winkler <carsten.winkler@helmholtz-berlin.de>
  */
 
-#define epicsExportSharedSymbols
 #include "SessionOpen62541.h"
 #include "SubscriptionOpen62541.h"
 #include "DataElementOpen62541.h"

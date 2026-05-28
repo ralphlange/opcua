@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -41,7 +42,7 @@ class RecordConnector;
  * (database side) and items (OPC UA side), the RecordConnector lock must be held
  * when operating on a data element.
  */
-class DataElement
+class epicsShareClass DataElement
 {
 public:
     virtual ~DataElement() {}

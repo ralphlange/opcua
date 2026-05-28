@@ -99,3 +99,15 @@ $(SHRLIB_PREFIX)%$(SHRLIB_SUFFIX_BASE) : $(UASDK_SHRLIB_DIR)/$(SHRLIB_PREFIX)%$(
 	$(INSTALL) -d -m 555 $< $(@D)
 
 endif
+
+# On Windows, copy the opcua DLL next to the test executables
+ifeq ($(OS_CLASS),WIN32)
+OPCUA_DLL = $(SHRLIB_PREFIX)opcua$(SHRLIB_SUFFIX_BASE)
+OPCUA_DLL_FULLPATH = $(INSTALL_SHRLIB)/$(OPCUA_DLL)
+
+$(GTESTLISTS) : $(OPCUA_DLL)
+
+$(OPCUA_DLL) : $(OPCUA_DLL_FULLPATH)
+	@$(ECHO) "Installing shared library $@ for unit tests"
+	$(INSTALL) -d -m 555 $< $(@D)
+endif

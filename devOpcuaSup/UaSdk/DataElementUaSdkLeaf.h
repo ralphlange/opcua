@@ -1,3 +1,4 @@
+#include <shareLib.h>
 /*************************************************************************\
 * Copyright (c) 2018-2026 ITER Organization.
 * This module is distributed subject to a Software License Agreement found
@@ -224,7 +225,7 @@ isWithinRange<OpcUa_Double, epicsFloat64>(const epicsFloat64 &)
     return true;
 }
 
-class DataElementUaSdkLeaf
+class epicsShareClass DataElementUaSdkLeaf
     : public DataElement
     , public DataElementUaSdk
 {
