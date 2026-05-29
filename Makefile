@@ -12,6 +12,12 @@ DIRS += $(wildcard iocBoot)
 # unitTestApp is only built as part of the 'runtests' target
 ifneq ($(filter unitTestApp runtests tapfiles test-results clean uninstall realclean,$(MAKECMDGOALS)),)
 DIRS += $(wildcard unitTestApp)
+
+# unitTestApp targets should build the app first
+unitTestApp_DEPEND_DIRS += $(filter-out unitTestApp, $(filter %Sup %App,$(DIRS)))
+unitTestApp.runtests: unitTestApp.all
+unitTestApp.tapfiles: unitTestApp.all
+unitTestApp.test-results: unitTestApp.all
 endif
 
 # The build order is controlled by these dependency rules:
@@ -30,13 +36,5 @@ $(foreach dir, $(filter %Top, $(DIRS)), \
 
 # iocBoot depends on all *App dirs
 iocBoot_DEPEND_DIRS += $(filter %App,$(DIRS))
-
-# Add any additional dependency rules here:
-
-# unitTestApp targets should build the app first
-unitTestApp_DEPEND_DIRS += $(filter-out unitTestApp, $(filter %Sup %App,$(DIRS)))
-unitTestApp.runtests: unitTestApp.all
-unitTestApp.tapfiles: unitTestApp.all
-unitTestApp.test-results: unitTestApp.all
 
 include $(TOP)/configure/RULES_TOP

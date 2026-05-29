@@ -64,6 +64,7 @@ opcua_LIBS += $(EPICS_BASE_IOC_LIBS)
 
 INC += devOpcuaVersion.h
 INC += devOpcuaVersionNum.h
+INC += OpcuaRegistry.h
 
 HTMLS += menuDefAction.html
 
