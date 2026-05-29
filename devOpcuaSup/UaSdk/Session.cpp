@@ -27,7 +27,7 @@
 #define epicsExportSharedSymbols
 #include "Session.h"
 #include "SessionUaSdk.h"
-#include "Registry.h"
+#include "OpcuaRegistry.h"
 
 #define st(s) #s
 #define str(s) st(s)

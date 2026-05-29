@@ -33,4 +33,10 @@ iocBoot_DEPEND_DIRS += $(filter %App,$(DIRS))
 
 # Add any additional dependency rules here:
 
+# unitTestApp targets should build the app first
+unitTestApp_DEPEND_DIRS += $(filter-out unitTestApp, $(filter %Sup %App,$(DIRS)))
+unitTestApp.runtests: unitTestApp.all
+unitTestApp.tapfiles: unitTestApp.all
+unitTestApp.test-results: unitTestApp.all
+
 include $(TOP)/configure/RULES_TOP
