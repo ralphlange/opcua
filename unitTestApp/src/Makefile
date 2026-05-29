@@ -37,7 +37,7 @@ endif
 
 # Link explicitly against locally compiled library objects
 OPCUA_OBJS += linkParser iocshIntegration $($(CLIENT)_OPCUA_OBJS)
-OPCUA_OBJS += RecordConnector Session Subscription
+OPCUA_OBJS += RecordConnector Session Subscription Stats
 
 #==================================================
 # Build tests executables
@@ -74,7 +74,9 @@ GTESTS += ElementTreeTest
 
 GTESTPROD_HOST += StatsTest
 StatsTest_SRCS += StatsTest.cpp
-StatsTest_LIBS += opcua
+StatsTest_LIBS += $($(CLIENT)_LIBS) $(EPICS_BASE_IOC_LIBS)
+StatsTest_SYS_LIBS_Linux += $(OPCUA_SYS_LIBS_Linux)
+StatsTest_OBJS += $(OPCUA_OBJS)
 GTESTS += StatsTest
 
 #==================================================
