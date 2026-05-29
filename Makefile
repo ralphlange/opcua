@@ -5,9 +5,14 @@ include $(TOP)/configure/CONFIG
 # Directories to build, any order
 DIRS += configure
 DIRS += $(wildcard *Sup)
-DIRS += $(wildcard *App)
+DIRS += $(filter-out unitTestApp, $(wildcard *App))
 DIRS += $(wildcard *Top)
 DIRS += $(wildcard iocBoot)
+
+# unitTestApp is only built as part of the 'runtests' target
+ifneq ($(filter unitTestApp runtests tapfiles test-results clean uninstall realclean,$(MAKECMDGOALS)),)
+DIRS += $(wildcard unitTestApp)
+endif
 
 # The build order is controlled by these dependency rules:
 
