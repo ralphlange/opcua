@@ -35,7 +35,7 @@ iocBoot_DEPEND_DIRS += $(filter-out unitTestApp, $(filter %App,$(DIRS)))
 
 # On test targets, build unitTestApp before running tests
 ifneq ($(filter unitTestApp,$(DIRS)),)
-runtests tapfiles test-results: unitTestApp
+unitTestApp$(DIVIDER)runtests unitTestApp$(DIVIDER)tapfiles unitTestApp$(DIVIDER)test-results: unitTestApp
 endif
 
 include $(TOP)/configure/RULES_TOP
