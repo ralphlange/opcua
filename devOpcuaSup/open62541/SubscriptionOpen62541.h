@@ -13,8 +13,8 @@
 #ifndef DEVOPCUA_SUBSCRIPTIONOPEN62541_H
 #define DEVOPCUA_SUBSCRIPTIONOPEN62541_H
 
-#include "Subscription.h"
 #include "OpcuaRegistry.h"
+#include "Subscription.h"
 
 #include <open62541/client.h>
 

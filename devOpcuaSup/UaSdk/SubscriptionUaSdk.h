@@ -25,9 +25,9 @@
 #include <epicsString.h>
 #include <epicsTypes.h>
 
+#include "OpcuaRegistry.h"
 #include "SessionUaSdk.h"
 #include "Subscription.h"
-#include "OpcuaRegistry.h"
 
 namespace DevOpcua {
 
