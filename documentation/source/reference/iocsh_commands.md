@@ -11,9 +11,12 @@ Configures a new OPC UA session.
 ```
 opcuaSession <name>, <URL>, [<options>]
 ```
-*   `name`: Unique name for the session.
-*   `URL`: Server endpoint (e.g., `opc.tcp://localhost:4840`).
-*   `options`: Key-value pairs (e.g., `AutoConnect=YES`).
+*   `name`:
+    Unique name for the session.
+*   `URL`:
+    Server endpoint (e.g., `opc.tcp://localhost:4840`).
+*   `options`:
+    Key-value pairs (e.g., `AutoConnect=YES`).
 
 ### `opcuaConnect` / `opcuaDisconnect`
 Manually connect or disconnect sessions matching a glob pattern.

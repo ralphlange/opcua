@@ -6,9 +6,13 @@ The OPC UA Device Support module provides several tools for debugging and tracin
 
 Several commands are available for inspecting the state of the module:
 
-*   `opcuaShow`: Prints information about sessions, subscriptions, items, and data elements. Supports glob patterns.
-*   `opcuaShowSecurity`: Prints information about the security setup and discovered endpoints.
-*   `opcuaConnect` / `opcuaDisconnect`: Manually manage session connections.
+*   `opcuaShow`:
+    Prints information about sessions, subscriptions, items, and data elements.
+    Supports glob patterns.
+*   `opcuaShowSecurity`:
+    Prints information about the security setup and discovered endpoints.
+*   `opcuaConnect` / `opcuaDisconnect`:
+    Manually manage session connections.
 
 Example:
 ```
@@ -19,8 +23,10 @@ opcuaShow "mySession*" 1
 
 You can enable tracing for specific EPICS records by setting the `TPRO` field to a value `>= 1`.
 
-*   In `.db` file: `field(TPRO, "1")`
-*   In IOC shell: `caput <PV_NAME>.TPRO 1`
+*   In `.db` file:
+    `field(TPRO, "1")`
+*   In IOC shell:
+    `caput <PV_NAME>.TPRO 1`
 
 ## Using UaExpert (External Tool)
 
@@ -35,4 +41,5 @@ UaExpert is a powerful OPC UA client tool from Unified Automation that can be us
 Adaptive concurrency was introduced to automatically throttle requests based on server response times.
 ```
 
-If adaptive concurrency is enabled, you can monitor its state using `opcuaShow`. It will display current limits and performance metrics.
+If adaptive concurrency is enabled, you can monitor its state using `opcuaShow`.
+It will display current limits and performance metrics.

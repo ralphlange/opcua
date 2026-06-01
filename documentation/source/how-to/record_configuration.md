@@ -10,10 +10,15 @@ For individual OPC UA items mapped to single EPICS records.
 
 `@<session_name> ns=<namespace_index>;<identifier_type>=<identifier> [<option>=<value>...]`
 
-*   `<session_name>`: Name of the OPC UA session.
-*   `<namespace_index>`: Numerical namespace index.
-*   `<identifier_type>`: `s` for string identifier, `i` for numerical identifier.
-*   `<identifier>`: The string or numerical ID of the OPC UA node. **Escape quotation marks** (`\"`) if the identifier string contains them (e.g., `"dataBlock"."myItem"` becomes `\"dataBlock\".\"myItem\"`).
+*   `<session_name>`:
+    Name of the OPC UA session.
+*   `<namespace_index>`:
+    Numerical namespace index.
+*   `<identifier_type>`:
+    `s` for string identifier, `i` for numerical identifier.
+*   `<identifier>`:
+    The string or numerical ID of the OPC UA node.
+    **Escape quotation marks** (`\"`) if the identifier string contains them (e.g., `"dataBlock"."myItem"` becomes `\"dataBlock\".\"myItem\"`).
 
 ### Example: Config Unmonitored (CFGU) Variables (Output Records)
 
@@ -38,11 +43,13 @@ record(ao, "$(P)CFGU:REALA") {
     field(LOPR, "10.0")
 }
 ```
-*   `monitor=n`: Explicitly disables monitoring for these unmonitored variables.
+*   `monitor=n`:
+    Explicitly disables monitoring for these unmonitored variables.
 
 ### Example: Config Monitored (CFGM) Variables (Output Records with Readback)
 
-These are output records that send data to the PLC and also monitor for changes on the PLC, updating the record if the value changes. They require an OPC UA subscription.
+These are output records that send data to the PLC and also monitor for changes on the PLC, updating the record if the value changes.
+They require an OPC UA subscription.
 
 ```
 # Boolean Output (Monitored)
@@ -63,12 +70,15 @@ record(ao, "$(P)CFGM:REALA") {
     field(LOPR, "10.0")
 }
 ```
-*   `@SLOW`: The name of the subscription to which this item belongs. The session is implicitly defined by the subscription.
+*   `@SLOW`:
+    The name of the subscription to which this item belongs.
+    The session is implicitly defined by the subscription.
 *   `monitor=y` is the default for input records or for output records expecting readback, so it is often omitted.
 
 ### Example: State Single Variables (STSV) (Input Records)
 
-These are input records (`bi`, `ai`, `longin`, `mbbi`, `mbbiDirect`) that read data from the PLC. They require an OPC UA subscription and should be `I/O Intr` scanned.
+These are input records (`bi`, `ai`, `longin`, `mbbi`, `mbbiDirect`) that read data from the PLC.
+They require an OPC UA subscription and should be `I/O Intr` scanned.
 
 ```
 # Binary Input
@@ -87,7 +97,8 @@ record(ai, "$(P)STSV:REALA") {
     field(SCAN, "I/O Intr")
 }
 ```
-*   `SCAN, "I/O Intr"`: Crucial for input records to process on data changes received via subscription, minimizing network traffic.
+*   `SCAN, "I/O Intr"`:
+    Crucial for input records to process on data changes received via subscription, minimizing network traffic.
 
 ## Structured Data Exchanges
 
@@ -99,7 +110,8 @@ For exchanging entire data structures (blocks) between the IOC and OPC UA server
 
 ### `opcuaItem` Record Configuration
 
-The `opcuaItem` record acts as a container for an entire structured OPC UA item. It requires an OPC UA subscription.
+The `opcuaItem` record acts as a container for an entire structured OPC UA item.
+It requires an OPC UA subscription.
 
 ```
 record(opcuaItem, "$(P)STST:OPCUA-ITEM") {
@@ -111,9 +123,12 @@ record(opcuaItem, "$(P)STST:OPCUA-ITEM") {
     # field(WOC, "immediate")
 }
 ```
-*   `@SLOW`: The subscription name.
-*   `ns=3;s=\"STST\".\"STRUCT\""`: Points to the structured OPC UA item.
-*   `SCAN, "I/O Intr"`: Ensures the record processes when the structured data changes.
+*   `@SLOW`:
+    The subscription name.
+*   `ns=3;s=\"STST\".\"STRUCT\""`:
+    Points to the structured OPC UA item.
+*   `SCAN, "I/O Intr"`:
+    Ensures the record processes when the structured data changes.
 
 ### Linking Element Records to `opcuaItem`
 
@@ -123,8 +138,12 @@ Individual elements within the structured item are accessed by other input/outpu
 
 `@<opcuaItem_record_name> [element=<element_name>] [<option>=<value>...]`
 
-*   `<opcuaItem_record_name>`: The name of the `opcuaItem` record managing the structured data.
-*   `element=<element_name>`: The path to the specific element within the structure. Use `.` as a hierarchy separator. **No quotation marks or backslashes** for the element path.
+*   `<opcuaItem_record_name>`:
+    The name of the `opcuaItem` record managing the structured data.
+*   `element=<element_name>`:
+    The path to the specific element within the structure.
+    Use `.` as a hierarchy separator.
+    **No quotation marks or backslashes** for the element path.
 
 #### Example: Input Records for Elements of `STST:OPCUA-ITEM`
 
@@ -145,4 +164,5 @@ record(ai, "$(P)STST:REALA") {
     field(SCAN, "I/O Intr")
 }
 ```
-*   `element=STRUCT.BOOL`: Refers to the `BOOL` element inside the `STRUCT` defined in the PLC.
+*   `element=STRUCT.BOOL`:
+    Refers to the `BOOL` element inside the `STRUCT` defined in the PLC.
