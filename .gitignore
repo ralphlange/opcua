@@ -35,3 +35,6 @@ O.*/
 *.filters
 *.user
 /devOpcuaSup/opcuaIoc/x64
+
+# Documentation build
+/documentation/build/
