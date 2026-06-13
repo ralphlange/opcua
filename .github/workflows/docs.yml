@@ -3,7 +3,7 @@ name: Build and Deploy Documentation
 on:
   push:
     branches:
-      - master
+      - add-manual
     paths:
       - 'documentation/**'
       - '.github/workflows/docs.yml'
@@ -48,7 +48,7 @@ jobs:
           path: 'documentation/build/html'
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/add-manual'
     needs: build
     runs-on: ubuntu-latest
     environment:
