@@ -38,7 +38,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y doxygen
           python -m pip install --upgrade pip
-          pip install sphinx sphinx-rtd-theme myst-parser breathe
+          pip install "sphinx<9" sphinx-rtd-theme myst-parser breathe
 
       - name: Run Doxygen
         run: doxygen documentation/Doxyfile
