@@ -66,9 +66,11 @@ how-to/*
 ```{toctree}
 :maxdepth: 2
 :caption: Reference
-:glob:
 
-reference/*
+reference/api.md
+reference/iocsh_commands.md
+reference/record_types.md
+reference/requirements_spec.md
 ```
 
 ```{toctree}
