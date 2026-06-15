@@ -67,7 +67,7 @@ how-to/*
 :maxdepth: 2
 :caption: Reference
 
-reference/api.md
+reference/api.rst
 reference/iocsh_commands.md
 reference/record_types.md
 reference/requirements_spec.md
