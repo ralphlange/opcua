@@ -40,13 +40,13 @@ when respecting the following minimal requirements:
     Defines the minimum rate (in ms)
     at which the server can send updated data to clients.
 
-    ```{hint}
+    :::{hint}
     For S7-1500 PLCs,
     especially small or mid-size ones (e.g., S7-1516),
     starting with 250ms intervals
     and grouping variables into structures
     is a good practice for improving performance.
-    ```
+    :::
 
 ## Configure OPC UA Server Security
 
@@ -62,12 +62,12 @@ when respecting the following minimal requirements:
     If no specific user authentication is required,
     check `Enable guest authentication`.
 
-    ```{attention}
+    :::{attention}
     On the IOC, OPC UA Security is enabled by default.
     To connect to any OPC UA server *without* security,
     you must set the option `sec-mode=None`
     for the concerned session(s) in your EPICS IOC configuration.
-    ```
+    :::
 
 ## Configure OPC UA Runtime License
 
@@ -97,7 +97,7 @@ that will be exposed as OPC UA nodes.
 
 ### Example PLC Data Types and EPICS Record Type Compatibility
 
-```{list-table}
+:::{list-table}
 :header-rows: 1
 
 * - PLC data type
@@ -116,12 +116,12 @@ that will be exposed as OPC UA nodes.
   - aai/aao/waveform (with compatible FTVL)
 * - Struct (UDT)
   - opcuaItem
-```
+:::
 
 Arrays that start at a non-zero index on the PLC
 are shifted to start from zero over OPC UA.
 
-```{note}
+:::{note}
 Structured items can *only* be handled
 using the `opcuaItem` record type.
-```
+:::

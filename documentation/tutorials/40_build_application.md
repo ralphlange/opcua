@@ -59,11 +59,11 @@ connecting to the Demo Server running on the same host.
 A single subscription `SUB1` is added to that session,
 with a publishing interval of 200ms.
 
-```{note}
+:::{note}
 To connect without security,
 you have to explicitly set the option `sec-mode=None`
 for the session.
-```
+:::
 
 ```
 opcuaMapNamespace OPC1 2 "http://www.unifiedautomation.com/DemoServer/"

@@ -63,7 +63,7 @@ an increasing number of *Security Policies*
 (sets of security algorithms and key lengths) are defined,
 identified their unique URIs:
 
-```{list-table}
+:::{list-table}
 :header-rows: 1
 
 * - Security Policy
@@ -80,7 +80,7 @@ identified their unique URIs:
   - http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep
 * - Aes256_Sha256_RsaPss
   - http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss
-```
+:::
 
 ## Client Authentication (Identity)
 

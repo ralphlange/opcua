@@ -1,10 +1,10 @@
 (iocsh-command-reference)=
 # iocShell Command Reference
 
-```{versionadded} 0.9
+:::{versionadded} 0.9
 The unified `opcuaSession`, `opcuaSubscription`, and `opcuaOptions` commands
 are replacing the older `opcuaCreate...` commands.
-```
+:::
 
 ## Session Management
 
@@ -34,9 +34,9 @@ For sessions using the option `autoconnect=y`,
 these commands will also switch the feature accordingly.
 
 ### Command `opcuaMapNamespace`
-```{versionadded} 0.8
+:::{versionadded} 0.8
 Maps a numerical namespace index used in the database to a URI on the server.
-```
+:::
 ```
 opcuaMapNamespace <session> <index> <URI>
 ```
@@ -58,7 +58,7 @@ If a server assigns numbers dynamically, the `opcuaMapNamespace` command
 allows to map a namespace number used in the IOC's databases
 to its URI on the server.
 
-````{hint}
+:::{hint}
 In your session `OPC1`,
 you want to connect to a device
 that is dynamically mapped in the OPC UA server.
@@ -72,7 +72,7 @@ opcuaMapNamespace OPC1 42 urn:MyCompany:UaServer:node3
 The IOC will download the server's namespace array
 and replace namespace index `42` in your records
 with the correct index for the specified URI.
-````
+:::
 
 ## Subscription Management
 
@@ -105,7 +105,7 @@ opcuaOptions <pattern> [<options>]
 
 ### Table of Session Options
 
-```{list-table}
+:::{list-table}
 :header-rows: 1
 
 * - Name
@@ -148,11 +148,11 @@ opcuaOptions <pattern> [<options>]
   - Requested security policy [default: use best available]
 * - `sec-id`
   - Set file to read identity credentials from
-```
+:::
 
 ### Table of Subscription Options
 
-```{list-table}
+:::{list-table}
 :header-rows: 1
 
 * - Name
@@ -161,15 +161,15 @@ opcuaOptions <pattern> [<options>]
   - Verbosity level of debugging [default: 0 = off]
 * - `priority`
   - Priority of the subscription [0..255; default: 0 = lowest]
-```
+:::
 
 ## OPC UA Security Management
 
-```{note}
+:::{note}
 To connect without security,
 you have to explicitly set the option `sec-mode=None`
 for the session.
-```
+:::
 
 ### Command `opcuaClientCertificate`
 Sets the client's own certificate and private key.

@@ -17,15 +17,15 @@ for accessing individual single scalar variables on the OPC UA server.
 *   `<identifier>`:
     The string or numerical ID of the OPC UA Node.
 
-    ```{note}
+    :::{note}
     **Escape quotation marks** (`\"`)
     if the identifier string contains them
     (e.g., `"dataBlock"."myItem"` becomes `\"dataBlock\".\"myItem\"`).
-    ```
+    :::
 
 ## Available Options
 
-```{list-table}
+:::{list-table}
 :header-rows: 1
 
 * - Option
@@ -59,7 +59,7 @@ for accessing individual single scalar variables on the OPC UA server.
 * - `timestamp`
   - `server`
   - Source of timestamp: `server`/`source`
-```
+:::
 
 ## Example: Output Records with Monitor (Bidirectional Mode)
 

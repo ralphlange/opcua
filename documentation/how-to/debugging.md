@@ -52,7 +52,7 @@ by setting the `TPRO` field to a value `>= 1`.
 
 ## Adaptive Concurrency Monitoring
 
-```{versionadded} 0.11
+:::{versionadded} 0.12
 Adaptive concurrency automatically throttles requests
 based on server response times.
 This allows the IOC to gracefully handle slow and fast servers,
@@ -61,7 +61,7 @@ adapting automatically to the available bandwidth.
 If adaptive concurrency is enabled,
 you can monitor its state using `opcuaShow`.
 It will display current limits and performance metrics.
-```
+:::
 
 ## Using UaExpert (External Tool)
 

@@ -22,7 +22,7 @@ Please contact the authors
 
 *   Unified Automation C++ Based [OPC UA Client SDK][uasdk]
     (1.5/1.6/1.7 are supported, as well as their evaluation bundles).
-    
+
 *   Windows and Linux builds are supported.
 
 *   The evaluation binary bundles by Unified Automation
@@ -34,16 +34,16 @@ Please contact the authors
 ## On Linux
 
 *   For OPC UA security support (authentication/encryption),
-    you need `libcrypto` on your system - 
+    you need `libcrypto` on your system -
     both when compiling the SDK and when generating any binaries (IOCs).
     The name of the package you have to install
     depends on the Linux distribution:
     `openssl-devel` on RedHat/CentOS/Fedora,
     `libssl-dev` on Debian/Ubuntu.
-    
+
 *   The UA Client SDK sets `BUILD_SHARED_LIBS=OFF` as default.
     To create shared SDK libraries, build the SDK using
-    
+
     ```Shell
     ./buildSdk.sh -s ON
     ```
@@ -52,7 +52,7 @@ Please contact the authors
     to the stack component.
     To fix this and create a complete shared library set of the SDK,
     apply the following patch (shown for 1.5.5):
-    
+
     ```Diff
     --- buildSdk.sh
     +++ buildSdk.sh
@@ -119,11 +119,11 @@ it creates a `CONFIG_OPCUA` file that is automatically included
 by all downstream (IOC-generating) modules and applications.
 This ensures that the configuration is always consistent.
 
-```{caution}
+:::{caution}
 When using the evaluation bundle of the SDK,
 only regular (shared) builds are supported.
 Do not set `STATIC_BUILD = YES` in your configuration.
-```
+:::
 
 ### Windows Specifics
 
@@ -146,23 +146,23 @@ LIBXML2 = $(UASDK)/third-party/win64/vs2015/libxml2
 OPENSSL = $(UASDK)/third-party/win64/vs2015/openssl
 ```
 
-```{caution}
+:::{caution}
 Different versions of the Unified Automation bundle
 have these libraries in different folders, under different names.
 Check `configure/CONFIG_SITE.Common.win32-x86`
 and adapt the settings to your situation.
-```
+:::
 
 If you do not have Administrator rights
 or if you want to unpack multiple versions of the UA SDK bundle,
 [UniExtract2][uniextract2] is your friend.
 
-```{caution}
+:::{caution}
 The evaluation bundle only contains binary libraries
 to be used with the MSVC compilers.
 MinGW can not be used with the libraries from the bundle,
 as the C++ name mangling is different.
-```
+:::
 
 As always on Windows,
 the build environment as well as the runtime environment (for any IOC)
@@ -174,7 +174,7 @@ Alternatively,
 you can put copies of all needed DLLs into the location of the binaries.
 (Remember that `make distclean` will remove those copies.)
 
-```{caution}
+:::{caution}
 Over time, Windows systems will have a large number
 of possibly different DLLs with the same names and/or versions
 being used concurrently on the system -
@@ -185,11 +185,11 @@ If you want your IOC binaries to be deployable
 without depending on specific DLLs being present on the target system,
 consider linking your IOCs statically.
 (Note that static builds are not available when using the evaluation bundles.)
-```
+:::
 
 On newer Windows systems,
 the Windows system version of the openssl DLLs
-are not compatible with the UA SDK bundled versions (see below). 
+are not compatible with the UA SDK bundled versions (see below).
 Copy the vendor-supplied DLLs
 next to the binaries to avoid a mismatch.
 

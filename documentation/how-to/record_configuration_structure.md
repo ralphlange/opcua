@@ -1,8 +1,8 @@
 # EPICS Records for Structured Data
 
-```{versionadded} 0.3
+:::{versionadded} 0.3
 The `opcuaItem` record type and support for structured data.
-```
+:::
 
 This guide shows how to configure EPICS records
 for accessing structured data on the OPC UA server.
@@ -33,15 +33,15 @@ of single scalar variables.
 *   `<identifier>`:
     The string or numerical ID of the OPC UA Node.
 
-    ```{note}
+    :::{note}
     **Escape quotation marks** (`\"`)
     if the identifier string contains them
     (e.g., `"dataBlock"."myItem"` becomes `\"dataBlock\".\"myItem\"`).
-    ```
+    :::
 
 ### Available Options
 
-```{list-table}
+:::{list-table}
 :header-rows: 1
 
 * - Option
@@ -72,7 +72,7 @@ of single scalar variables.
   - `server`
   - Source of timestamp: `server`/`source`/`@<top_element>`
     [`top_element` points to source of timestamp]
-```
+:::
 
 ### `opcuaItem` Record Configuration
 
@@ -129,7 +129,7 @@ are accessed by other regular input/output records.
 
 ### Available Options
 
-```{list-table}
+:::{list-table}
 :header-rows: 1
 
 * - Option
@@ -148,7 +148,7 @@ are accessed by other regular input/output records.
 * - `timestamp`
   - `server`
   - Source of timestamp: `server`/`source`/`data`
-```
+:::
 
 ### Example: Input Records for Elements of `$(P)FOO:OPCUA-ITEM`
 
