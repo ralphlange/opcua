@@ -2,8 +2,7 @@ PROJECT_NAME           = "EPICS OPC UA Device Support"
 OUTPUT_DIRECTORY       = documentation/build
 INPUT                  = devOpcuaSup
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */UaSdk/* \
-                         */open62541/*
+EXCLUDE                = devOpcuaSup/UaSdk devOpcuaSup/open62541
 GENERATE_XML           = YES
 XML_OUTPUT             = xml
 GENERATE_HTML          = NO

@@ -165,6 +165,7 @@ struct dset6 {
     long (*linconv)(R*);
 };
 
+/** @cond */
 typedef epicsGuard<epicsMutex> Guard;
 typedef epicsGuardRelease<epicsMutex> UnGuard;
 
@@ -177,6 +178,7 @@ struct SB {
         return *this;
     }
 };
+/** @endcond */
 
 class DBEntry {
     DBENTRY entry;
@@ -221,7 +223,9 @@ public:
     }
 };
 
+/** @cond */
 typedef std::unique_ptr<linkInfo> (*linkParserFunc)(dbCommon*, DBEntry&);
+/** @endcond */
 
 /**
  * @brief Return the name of the low level client library.
