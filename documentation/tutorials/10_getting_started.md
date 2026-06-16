@@ -27,3 +27,24 @@ then the Device Support module itself,
 then your IOC application that uses it.
 
 Linux and Windows native builds are supported.
+
+## *Alternative:* Binary Distribution for Linux
+
+Please look at the "Assets" sections of specific releases
+on the [release page](https://github.com/epics-modules/opcua/releases)
+for the binary distribution tars.
+
+These tars contain an EPICS module 
+with a binary Linux shared library (`libopcua.so.<version>`)
+that contains (embeds) the Unified Automation low-level client.
+Its license allows distributing binaries royalty-free.
+
+In your setup, the module from the binary distribution
+can be used like a support module you built from source.
+The binary device support is fully functional
+and can be used without limitations or any fees.
+
+You need to download the binary distribution tar that matches
+your Linux distribution and the exact EPICS Base version,
+else you will not be able to create IOCs.
+(Failures show as linking errors in your application.)
