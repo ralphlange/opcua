@@ -47,23 +47,23 @@ This includes binary distribution tars,
 which allow using the commercial Unified Automation Client SDK libraries
 without any purchase or fee.
 
-```{toctree}
+:::{toctree}
 :maxdepth: 2
 :caption: Tutorials
 :glob:
 
 tutorials/??_*
-```
+:::
 
-```{toctree}
+:::{toctree}
 :maxdepth: 2
 :caption: How-to Guides
 :glob:
 
 how-to/*
-```
+:::
 
-```{toctree}
+:::{toctree}
 :maxdepth: 2
 :caption: Reference
 
@@ -71,23 +71,23 @@ reference/api.rst
 reference/iocsh_commands.md
 reference/record_types.md
 reference/requirements_spec.md
-```
+:::
 
-```{toctree}
+:::{toctree}
 :maxdepth: 2
 :caption: Explanation
 :glob:
 
 explanation/*
-```
+:::
 
-```{toctree}
+:::{toctree}
 :maxdepth: 2
 :caption: Miscellanea
 
 credits.md
 license.md
-```
+:::
 
 Indices and tables
 ==================

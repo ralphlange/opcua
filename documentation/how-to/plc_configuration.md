@@ -13,11 +13,18 @@ as an OPC UA server using TIA Portal.
     matches the IP address of your PLC on the network.
     The default OPC UA port is 4840.
 
-    ```{note}
-    The OPC UA server must be accessible via one of the PLC's IPs.
-    It should not be accessed via a separate
-    PLC Communications Processor (CP) module.
-    ```
+### Using OPC UA with a CP Module
+
+OPC UA works using a CP module
+when respecting the following minimal requirements:
+
+| Feature                | Minimum Requirement |
+| ---------------------- | ------------------- |
+| Virtual interface (W1) | CPU FW **V2.8**     |
+| Configuration in TIA   | TIA Portal **V16**  |
+| OPC UA via CP          | Supported via W1    |
+| Compatible CP          | CP 1543‑1 FW ≥ **V2.2** (recommended ≥ V3.0) |
+
 
 ## Configure OPC UA Server Options
 
@@ -33,13 +40,13 @@ as an OPC UA server using TIA Portal.
     Defines the minimum rate (in ms)
     at which the server can send updated data to clients.
 
-    ```{hint}
+    :::{hint}
     For S7-1500 PLCs,
     especially small or mid-size ones (e.g., S7-1516),
     starting with 250ms intervals
     and grouping variables into structures
     is a good practice for improving performance.
-    ```
+    :::
 
 ## Configure OPC UA Server Security
 
@@ -55,12 +62,12 @@ as an OPC UA server using TIA Portal.
     If no specific user authentication is required,
     check `Enable guest authentication`.
 
-    ```{attention}
+    :::{attention}
     On the IOC, OPC UA Security is enabled by default.
     To connect to any OPC UA server *without* security,
     you must set the option `sec-mode=None`
     for the concerned session(s) in your EPICS IOC configuration.
-    ```
+    :::
 
 ## Configure OPC UA Runtime License
 
@@ -90,15 +97,31 @@ that will be exposed as OPC UA nodes.
 
 ### Example PLC Data Types and EPICS Record Type Compatibility
 
-| PLC data type         | EPICS Record type           |
-| :-------------------- | :-------------------------- |
-| REAL                  | ai/ao                       |
-| BOOL                  | bi/bo                       |
-| BYTE/WORD/DWORD/INT/DINT | longin/longout, mbbi/mbbo, mbbiDirect/mbboDirect, ai/ao |
-| STRING                | stringin/stringout, lsi/lso |
-| STRUCT                | opcuaItem                   |
+:::{list-table}
+:header-rows: 1
 
-```{note}
-Structured items can only be handled
+* - PLC data type
+  - EPICS Record type
+* - Real, LReal
+  - ai/ao
+* - Bool
+  - bi/bo
+* - Byte/Word/DWord, most *Int
+  - longin/longout, mbbi/mbbo, mbbiDirect/mbboDirect, bi/bo, ai/ao (RVAL)
+* - LInt/ULInt
+  - int64in/int64out
+* - String
+  - stringin/stringout, lsi/lso
+* - Array[m..n] of *
+  - aai/aao/waveform (with compatible FTVL)
+* - Struct (UDT)
+  - opcuaItem
+:::
+
+Arrays that start at a non-zero index on the PLC
+are shifted to start from zero over OPC UA.
+
+:::{note}
+Structured items can *only* be handled
 using the `opcuaItem` record type.
-```
+:::

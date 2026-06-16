@@ -15,13 +15,13 @@ cd iocBoot/iocUaDemoServer
 ./st.cmd
 ```
 
-```{hint}
+:::{hint}
 Always exit your IOC gracefully using `^D` or `exit`.
 
 Hard exits or killing the IOC process
 will leave resources in use on the OPC UA server,
 which will only be cleaned up after a grace period.
-```
+:::
 
 ## Enjoy OPC UA!
 

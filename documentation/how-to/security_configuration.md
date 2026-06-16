@@ -43,9 +43,9 @@ by calling `opcuaSession` or `opcuaOptions` in the iocShell.
 *   `sec-policy`:
     selects a specific policy by its short name (e.g., `Basic256Sha256`).
 
-```{note}
+:::{note}
 To connect without security, you have to explicitly set `sec-mode=None`.
-```
+:::
 
 ## Identity (Server-Side User Authentication)
 
@@ -55,12 +55,12 @@ To use a Username Identity or a Certificate Identity Token,
 prepare an identity file
 and configure the filename through the session option `sec-id`.
 
-```{attention}
+:::{attention}
 If this file contains a (clear text) password,
 its access right settings are crucial.
 It needs to be on a local disk
 and only readable by the user running the IOC.
-```
+:::
 
 ### Username Identity Token
 In the identity file, set:
@@ -103,9 +103,9 @@ PEM format requires `.pem` extension.
     The server certificate will be saved to the specified location.
 3.  Copy the certificate file to the IOC's certificate store
     under `trusted/certs` to explicitly trust it.
-    ```{warning}
+    :::{warning}
     Always verify the certificate's thumbprint before trusting it.
-    ```
+    :::
 
 ### Creating Application Instance Certificates
 

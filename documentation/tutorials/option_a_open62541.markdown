@@ -45,16 +45,16 @@ Please contact the authors
 
 ## Building Open62541
 
-```{Note}
+:::{Note}
 The open62541 project is focused on the server implementation of OPC UA.
 The client functionality is fully supported, complete and usable,
 but it does not get the attention that the server parts get.
-```
+:::
 
-```{caution}
+:::{caution}
 Do *not* use the download link on the open62541 web site.
 Use their GitHub Release Page instead.
-```
+:::
 
 ## On Linux
 
@@ -282,7 +282,7 @@ Alternatively,
 you can put copies of all needed DLLs into the location of the binaries.
 (Remember that `make distclean` will remove those copies.)
 
-```{caution}
+:::{caution}
 Over time, Windows systems will have a large number
 of possibly different DLLs with the same names and/or versions
 being used concurrently on the system -
@@ -293,7 +293,7 @@ If you want your IOC binaries to be deployable
 without depending on specific DLLs being present on the target system,
 consider linking your IOCs statically.
 (Note that static builds are not available when using the evaluation bundles.)
-```
+:::
 
 ## Known issues
 
