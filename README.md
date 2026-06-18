@@ -60,8 +60,7 @@ There are two choices for the low-level OPC UA client library:
 ### Using the open62541 SDK
 
 * The [open62541 SDK][open62541.sdk] \
-  Choose a recent release from series 1.2 or 1.3
-  (release seriens 1.4 is not supported yet).
+  Choose a recent release from series 1.2, 1.3 or 1.4.
   Download the sources using GitHub releases, not through the project website.
 
 * For OPC UA security support (authentication/encryption), you need
