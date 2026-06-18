@@ -88,6 +88,20 @@ jobs:
             open62541: "1.2.10"
             name: "7.0 Ub-22 v1.2.10"
 
+          - os: ubuntu-22.04
+            cmp: gcc
+            configuration: default
+            base: "7.0"
+            open62541: "1.4.10"
+            name: "7.0 Ub-22 v1.4.10"
+
+          - os: ubuntu-22.04
+            cmp: gcc
+            configuration: default
+            base: "3.15"
+            open62541: "1.4.10"
+            name: "3.15 Ub-22 v1.4.10"
+
     steps:
     - uses: actions/checkout@v6
       with:

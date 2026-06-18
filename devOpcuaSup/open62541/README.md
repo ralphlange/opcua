@@ -15,8 +15,7 @@ Please contact the authors
 ## Prerequisites
 
 *   [Open62541](https://www.open62541.org/) SDK / C library
-    (v1.2 and v1.3 series have been tested; their system packages should also work.
-    open62541 v1.4 changed the header file structure and does not work yet.)
+    (v1.2, v1.3 and v1.4 series have been tested; their system packages should also work.)
     
 *   Cmake (3.x) if you're building Open62541 from sources.
 

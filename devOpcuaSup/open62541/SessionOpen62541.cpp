@@ -411,9 +411,22 @@ SessionOpen62541::setOption (const std::string &name, const std::string &value)
             // Loglevels:  0:trace, 1:debug, 2:info, 3:warning, 4:error, 5:fatal (and higher)
             // Our debug=0 shall only print fatal errors.
             // After that, the higher debug the lower UA_LogLevel, down to 0.
+#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR >= 104
+            if (config->logging && config->logging->clear)
+                config->logging->clear(config->logging);
+            {
+                UA_Logger *newLogger = (UA_Logger *)UA_malloc(sizeof(UA_Logger));
+                if (newLogger) {
+                    *newLogger = UA_Log_Stdout_withLevel(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+                    newLogger->clear = [](UA_Logger *l){ UA_free(l); };
+                    config->logging = newLogger;
+                }
+            }
+#else
             if (config->logger.clear)
                 config->logger.clear(config->logger.context); // Use context as opaque handle only!
             config->logger = UA_Log_Stdout_withLevel(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+#endif
         }
     } else if (name == "batch-nodes") {
         errlogPrintf("DEPRECATED: option 'batch-nodes'; use 'nodes-max' instead\n");
@@ -503,9 +516,22 @@ SessionOpen62541::connect (bool manual)
     }
     UA_ClientConfig *config = UA_Client_getConfig(client);
     if (debug < 5) {
+#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR >= 104
+        if (config->logging && config->logging->clear)
+            config->logging->clear(config->logging);
+        {
+            UA_Logger *newLogger = (UA_Logger *)UA_malloc(sizeof(UA_Logger));
+            if (newLogger) {
+                *newLogger = UA_Log_Stdout_withLevel(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+                newLogger->clear = [](UA_Logger *l){ UA_free(l); };
+                config->logging = newLogger;
+            }
+        }
+#else
         if (config->logger.clear)
             config->logger.clear(config->logger.context);
         config->logger = UA_Log_Stdout_withLevel(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+#endif
     }
 #ifdef HAS_SECURITY
     // We need the client certificate before UA_ClientConfig_setDefaultEncryption
