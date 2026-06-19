@@ -14,12 +14,12 @@ Configures a new OPC UA session.
 ```
 opcuaSession <name> <serverURL> [<options>]
 ```
-*   `name`:
-    Unique name for the session.
-*   `serverURL`:
-    Server endpoint (e.g., `opc.tcp://localhost:4840`).
-*   `options`:
-    Key-value pairs (e.g., `autoconnect=n` or `debug=1`).
+* `name`:
+  Unique name for the session.
+* `serverURL`:
+  Server endpoint (e.g., `opc.tcp://localhost:4840`).
+* `options`:
+  Key-value pairs (e.g., `autoconnect=n` or `debug=1`).
 
 ### Commands `opcuaConnect` / `opcuaDisconnect`
 Manually connect or disconnect sessions matching a glob pattern.
@@ -27,8 +27,8 @@ Manually connect or disconnect sessions matching a glob pattern.
 opcuaConnect <pattern>
 opcuaDisconnect <pattern>
 ```
-*   `pattern`:
-    Session name glob pattern.
+* `pattern`:
+  Session name glob pattern.
 
 For sessions using the option `autoconnect=y`,
 these commands will also switch the feature accordingly.
@@ -40,12 +40,12 @@ Maps a numerical namespace index used in the database to a URI on the server.
 ```
 opcuaMapNamespace <session> <index> <URI>
 ```
-*   `session`:
-    Name of the session.
-*   `index`:
-    Namespace index locally used.
-*   `URI`:
-    URI in the server's namespace table to map `index` to.
+* `session`:
+  Name of the session.
+* `index`:
+  Namespace index locally used.
+* `URI`:
+  URI in the server's namespace table to map `index` to.
 
 On the wire, namespaces are always integers.
 A few are reserved well-known namespaces for OPC UA or the server itself.
@@ -82,14 +82,14 @@ Configures a new subscription and binds it to an existing session.
 ```
 opcuaSubscription <name> <session> <publishing_interval> [<options>]
 ```
-*   `name`:
-    Unique name for the subscription.
-*   `session`:
-    Name of the session that this subscription is added to.
-*   `publishing_interval`:
-    Publishing interval for the subscription [ms].
-*   `options`:
-    Key-value pairs (e.g., `priority=50` or `debug=1`).
+* `name`:
+  Unique name for the subscription.
+* `session`:
+  Name of the session that this subscription is added to.
+* `publishing_interval`:
+  Publishing interval for the subscription [ms].
+* `options`:
+  Key-value pairs (e.g., `priority=50` or `debug=1`).
 
 ## Setting Options
 
@@ -98,10 +98,10 @@ Sets options for existing sessions or subscriptions matching a pattern.
 ```
 opcuaOptions <pattern> [<options>]
 ```
-*   `pattern`:
-    Session or Subscription name glob pattern.
-*   `options`:
-    Key-value pairs (e.g., `autoconnect=n` or `debug=1`).
+* `pattern`:
+  Session or Subscription name glob pattern.
+* `options`:
+  Key-value pairs (e.g., `autoconnect=n` or `debug=1`).
 
 ### Table of Session Options
 
@@ -176,10 +176,10 @@ Sets the client's own certificate and private key.
 ```
 opcuaClientCertificate <public_key> <private_key>
 ```
-*   `public_key`:
-    Path to the file containing the certificate (public key).
-*   `private_key`:
-    Path to the file containing the private key.
+* `public_key`:
+  Path to the file containing the certificate (public key).
+* `private_key`:
+  Path to the file containing the private key.
 
 ### Command `opcuaSetupPKI`
 Sets the location of the PKI certificate store,
@@ -188,24 +188,24 @@ where certificates and revocation lists are stored.
 opcuaSetupPKI <PKI_location>
 opcuaSetupPKI <server_certs> <server_revocation_lists> <issuer_certs> <issuer_revocation_lists>
 ```
-*   `PKI location`:
-    Path to the standard PKI directory structure.
-*   `server_certs`:
-    Path to the location of trusted server certificates.
-*   `server_revocation_lists`:
-    Path to the location of server revocation lists.
-*   `issuer_certs`:
-    Path to the location of trusted issuer certificates.
-*   `issuer_revocation_lists`:
-    Path to the location of issuer revocation lists.
-    
+* `PKI location`:
+  Path to the standard PKI directory structure.
+* `server_certs`:
+  Path to the location of trusted server certificates.
+* `server_revocation_lists`:
+  Path to the location of server revocation lists.
+* `issuer_certs`:
+  Path to the location of trusted issuer certificates.
+* `issuer_revocation_lists`:
+  Path to the location of issuer revocation lists.
+
 ### Command `opcuaSaveRejected`
 Sets the location where rejected server certificates are saved.
 ```
 opcuaSaveRejected <rejected_cert_location>
 ```
-*   `rejected_cert_location`:
-    Path to the location for saving rejected server certificates.
+* `rejected_cert_location`:
+  Path to the location for saving rejected server certificates.
 
 ### Command `opcuaShowSecurity`
 Shows discovered endpoints and security details for a session
@@ -214,8 +214,8 @@ or (without argument) show security related information for the IOC.
 opcuaShowSecurity <session>
 opcuaShowSecurity
 ```
-*   `session`:
-    Name of the session to show security info for.
+* `session`:
+  Name of the session to show security info for.
 
 ## Inspection and Debugging
 
@@ -224,7 +224,7 @@ Shows details for sessions, subscriptions, or records.
 ```
 opcuaShow <pattern>, [<verbosity>]
 ```
-*   `pattern`:
-    Session or Subscription name glob pattern.
-*   `verbosity`:
-    Sets amount of printed information.
+* `pattern`:
+  Session or Subscription name glob pattern.
+* `verbosity`:
+  Sets amount of printed information.

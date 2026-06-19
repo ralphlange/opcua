@@ -93,28 +93,28 @@ record(longin, "$(P)$(R)liuint16") {
 Which is an `longin` input record,
 monitoring an OPC UA variable of type UInt16
 from the "Dynamic" set that gets updated by the server code. 
-*   `$(P)$(R)liuint16`:
-    The record name.
-    `$(P)` and `$(R)` are prefixes defined in your `st.cmd`.
-*   `DTYP, "OPCUA"`:
-    Specifies that this record uses the OPC UA Device Support.
-*   `INP, "@$(SUBS) ns=2;s=Demo.Dynamic.Scalar.UInt16"`:
-    This is the crucial link field.
-    -   `@$(SUBS)`:
-        The name of the OPC UA subscription to use,
-        set through a macro.
-    -   `ns=2`:
-        The namespace index of the OPC UA item.
-    -   `s=Demo.Dynamic.Scalar.UInt16`:
-        The string identifier of the OPC UA item.
-*   `SCAN, "I/O Intr"`:
-    Configures the record to process upon reception
-    of new data from the OPC UA server,
-    which is efficient for subscriptions.
-*   `TSE, "-2"`:
-    Use OPC UA timestamps as EPICS record timestamp.
-*   `TPRO, "$(DEBUG=0)`:
-    Set debug level through a macro.
+* `$(P)$(R)liuint16`:
+  The record name.
+  `$(P)` and `$(R)` are prefixes defined in your `st.cmd`.
+* `DTYP, "OPCUA"`:
+  Specifies that this record uses the OPC UA Device Support.
+* `INP, "@$(SUBS) ns=2;s=Demo.Dynamic.Scalar.UInt16"`:
+  This is the crucial link field.
+  - `@$(SUBS)`:
+    The name of the OPC UA subscription to use,
+    set through a macro.
+  - `ns=2`:
+    The namespace index of the OPC UA item.
+  - `s=Demo.Dynamic.Scalar.UInt16`:
+    The string identifier of the OPC UA item.
+* `SCAN, "I/O Intr"`:
+  Configures the record to process upon reception
+  of new data from the OPC UA server,
+  which is efficient for subscriptions.
+* `TSE, "-2"`:
+  Use OPC UA timestamps as EPICS record timestamp.
+* `TPRO, "$(DEBUG=0)`:
+  Set debug level through a macro.
 
 ### Output Records (Bidirectional)
 
@@ -131,28 +131,28 @@ record(aao, "$(P)$(R)aaobool") {
 Which is an array output record of type `UCHAR`,
 linked to an OPC UA variable that is an Array of Boolean
 from the "Static" set that gets you can read and write. 
-*   `$(P)$(R)aaobool`:
-    The record name.
-    `$(P)` and `$(R)` are prefixes defined in your `st.cmd`.
-*   `DTYP, "OPCUA"`:
-    Specifies that this record uses the OPC UA Device Support.
-*   `OUT, "@$(SUBS) ns=2;s=Demo.Static.Arrays.Boolean"`:
-    This is the crucial link field.
-    -   `@$(SUBS)`:
-        The name of the OPC UA subscription to use,
-        set through a macro.
-    -   `ns=2`:
-        The namespace index of the OPC UA item.
-    -   `s=Demo.Static.Arrays.Boolean`:
-        The string identifier of the OPC UA item.
-*   `FTVL, "UCHAR"`:
-    Type of the EPICS array.
-*   `NELM, "10"`:
-    Capacity of the EPICS array.
-*   `TSE, "-2"`:
-    Use OPC UA timestamps as EPICS record timestamp.
-*   `TPRO, "$(DEBUG=0)`:
-    Set debug level through a macro.
+* `$(P)$(R)aaobool`:
+  The record name.
+  `$(P)` and `$(R)` are prefixes defined in your `st.cmd`.
+* `DTYP, "OPCUA"`:
+  Specifies that this record uses the OPC UA Device Support.
+* `OUT, "@$(SUBS) ns=2;s=Demo.Static.Arrays.Boolean"`:
+  This is the crucial link field.
+  - `@$(SUBS)`:
+    The name of the OPC UA subscription to use,
+    set through a macro.
+  - `ns=2`:
+    The namespace index of the OPC UA item.
+  - `s=Demo.Static.Arrays.Boolean`:
+    The string identifier of the OPC UA item.
+* `FTVL, "UCHAR"`:
+  Type of the EPICS array.
+* `NELM, "10"`:
+  Capacity of the EPICS array.
+* `TSE, "-2"`:
+  Use OPC UA timestamps as EPICS record timestamp.
+* `TPRO, "$(DEBUG=0)`:
+  Set debug level through a macro.
 
 ### Records Linking to Structured Data
 
@@ -190,36 +190,36 @@ link them to specific elements.
 
 ## Create an IOC for OPC UA from Scratch
 
-1.  **Create a new EPICS application:**
-    ```bash
-    cd <your_epics_area>
-    /path/to/epics/base/bin/<arch>/makeBaseApp.pl -t ioc MyExampleIOC
-    /path/to/epics/base/bin/<arch>/makeBaseApp.pl -i -t ioc MyExampleIOC
-    ```
+1. **Create a new EPICS application:**
+   ```bash
+   cd <your_epics_area>
+   /path/to/epics/base/bin/<arch>/makeBaseApp.pl -t ioc MyExampleIOC
+   /path/to/epics/base/bin/<arch>/makeBaseApp.pl -i -t ioc MyExampleIOC
+   ```
 
-2.  **Add the OPC UA Device Support:**
-    Add an entry setting `OPCUA = <path_to_the_opcua_module>`
-    to your `RELEASE.local` file.
+2. **Add the OPC UA Device Support:**
+   Add an entry setting `OPCUA = <path_to_the_opcua_module>`
+   to your `RELEASE.local` file.
     
-3.  **Add `opcua` to your `Makefile`:**
-    Edit `MyExampleIOCApp/src/Makefile`
-    and add `opcua` to the list of libraries to link against
-    and to the list of DBD files to use.
-    ```makefile
-    # Include dbd files from all support applications:
-    MyExampleIOC_DBD += opcua.dbd
-    # ...
-    # Add all the support libraries needed by this IOC
-    MyExampleIOC_LIBS += opcua
-    ```
+3. **Add `opcua` to your `Makefile`:**
+   Edit `MyExampleIOCApp/src/Makefile`
+   and add `opcua` to the list of libraries to link against
+   and to the list of DBD files to use.
+   ```makefile
+   # Include dbd files from all support applications:
+   MyExampleIOC_DBD += opcua.dbd
+   # ...
+   # Add all the support libraries needed by this IOC
+   MyExampleIOC_LIBS += opcua
+   ```
 
-4.  **Build the application:**
-    ```bash
-    make
-    ```
+4. **Build the application:**
+   ```bash
+   make
+   ```
 
-5.  **Finish your Application:**
-    Add databases.
-    Load the databases
-    and create the necessary OPC UA Sessions/Subscriptions\
-    in your `st.cmd` script.
+5. **Finish your Application:**
+   Add databases.
+   Load the databases
+   and create the necessary OPC UA Sessions/Subscriptions\
+   in your `st.cmd` script.
