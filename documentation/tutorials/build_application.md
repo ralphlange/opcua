@@ -18,6 +18,7 @@ for connecting to the Unified Automation C++ demo server.
 ### Structure of the Example Application
 
 Under `.../exampleTop`, you will find
+
 - `templateDbSup` - contains useful template databases
 - `opcuaIocApp` - builds the OPC UA IOC binary
 - `DeviceDbApp` - creates the databases for the two IOCs
@@ -54,6 +55,7 @@ Looking at the `st.cmd` of the Demo Server IOC...
 opcuaSession OPC1 opc.tcp://localhost:48010 sec-mode=None
 opcuaSubscription SUB1 OPC1 200
 ```
+
 This creates a Session named `OPC1` (without security)
 connecting to the Demo Server running on the same host.
 A single subscription `SUB1` is added to that session,
@@ -68,6 +70,7 @@ for the session.
 ```
 opcuaMapNamespace OPC1 2 "http://www.unifiedautomation.com/DemoServer/"
 ```
+
 This maps the namespace `ns=2` for links on this Session
 to whatever number the server uses
 for the namespace identified by the specified URL.
@@ -90,9 +93,11 @@ record(longin, "$(P)$(R)liuint16") {
     field(TPRO, "$(DEBUG=0)")
 }
 ```
+
 Which is an `longin` input record,
 monitoring an OPC UA variable of type UInt16
 from the "Dynamic" set that gets updated by the server code. 
+
 * `$(P)$(R)liuint16`:
   The record name.
   `$(P)` and `$(R)` are prefixes defined in your `st.cmd`.
@@ -128,9 +133,11 @@ record(aao, "$(P)$(R)aaobool") {
     field(TPRO, "$(DEBUG=0)")
 }
 ```
+
 Which is an array output record of type `UCHAR`,
 linked to an OPC UA variable that is an Array of Boolean
 from the "Static" set that gets you can read and write. 
+
 * `$(P)$(R)aaobool`:
   The record name.
   `$(P)` and `$(R)` are prefixes defined in your `st.cmd`.
@@ -176,6 +183,7 @@ record(stringin, "$(P)$(R)starttimeRBK") {
     field(TSE,  "-2")
 }
 ```
+
 An `opcuaItem` record representing the Item (structure).
 It is configured "normally",
 addressing the OPC UA Item (like the earlier examples),

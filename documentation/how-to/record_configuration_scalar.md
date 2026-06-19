@@ -88,6 +88,7 @@ record(ao, "$(P)FOO:REALA") {
     field(LOPR, "10.0")
 }
 ```
+
 * `@SLOW`:
   The name of the Subscription to which the Item belongs.
   The Session is implicitly defined by the Subscription.
@@ -122,6 +123,7 @@ record(ao, "$(P)BAR:REALA") {
     field(LOPR, "10.0")
 }
 ```
+
 * `@PLC0`:
   The name of the Session to which the Item belongs.
   Without monitoring, there is no Subscription necessary.
@@ -154,6 +156,7 @@ record(ai, "$(P)BAZ:REALA") {
     field(LOPR, "10.0")
 }
 ```
+
 * `@SLOW`:
   The name of the Subscription to which the Item belongs.
   The Session is implicitly defined by the Subscription.
@@ -187,6 +190,7 @@ record(ai, "$(P)QUX:REALA") {
     field(LOPR, "10.0")
 }
 ```
+
 * `@PLC0`:
   The name of the Session to which the Item belongs.
   Without monitoring, there is no Subscription necessary.

@@ -4,6 +4,7 @@
 This is a standard EPICS module.
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/epics-modules/opcua.git
    cd opcua
@@ -11,6 +12,7 @@ This is a standard EPICS module.
 
 2. **_(On Linux:)_ Configure the C++ Standard:**
    Configure the compiler on Linux to use the C++11 standard by adding
+
    ```makefile
    USR_CXXFLAGS_Linux += -std=c++11
    ```
@@ -33,6 +35,7 @@ This is a standard EPICS module.
    and [Configuring Device Support for UA SDK](devsup-conf-uasdk).
 
 4. **Build the module:**
+
    ```bash
    make
    ```

@@ -47,6 +47,7 @@ Please contact the authors
   ```Shell
   ./buildSdk.sh -s ON
   ```
+
   In many versions of the SDK,
   the `buildSdk.sh` build script does not apply the `-s ON` setting
   to the stack component.
@@ -132,6 +133,7 @@ and set `UASDK` to the location of the Unified Automation bundle.
 
 All paths in EPICS build configuration files
 must use Windows "short names" where needed, e.g.
+
 ```Makefile
 UASDK = C:/PROGRA~2/UnifiedAutomation/UaSdkCppBundleEval
 ```

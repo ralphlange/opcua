@@ -10,10 +10,13 @@ are replacing the older `opcuaCreate...` commands.
 
 (iocsh-opcuasession)=
 ### Command `opcuaSession`
+
 Configures a new OPC UA session.
+
 ```
 opcuaSession <name> <serverURL> [<options>]
 ```
+
 * `name`:
   Unique name for the session.
 * `serverURL`:
@@ -22,11 +25,14 @@ opcuaSession <name> <serverURL> [<options>]
   Key-value pairs (e.g., `autoconnect=n` or `debug=1`).
 
 ### Commands `opcuaConnect` / `opcuaDisconnect`
+
 Manually connect or disconnect sessions matching a glob pattern.
+
 ```
 opcuaConnect <pattern>
 opcuaDisconnect <pattern>
 ```
+
 * `pattern`:
   Session name glob pattern.
 
@@ -34,12 +40,15 @@ For sessions using the option `autoconnect=y`,
 these commands will also switch the feature accordingly.
 
 ### Command `opcuaMapNamespace`
+
 :::{versionadded} 0.8
 Maps a numerical namespace index used in the database to a URI on the server.
 :::
+
 ```
 opcuaMapNamespace <session> <index> <URI>
 ```
+
 * `session`:
   Name of the session.
 * `index`:
@@ -66,9 +75,11 @@ You know that the namespace URI is "urn:MyCompany:UaServer:node3".
 
 To connect, use an arbitrary namespace index in your databases, e.g. `42`.
 Then call
+
 ```
 opcuaMapNamespace OPC1 42 urn:MyCompany:UaServer:node3
 ```
+
 The IOC will download the server's namespace array
 and replace namespace index `42` in your records
 with the correct index for the specified URI.
@@ -78,10 +89,13 @@ with the correct index for the specified URI.
 
 (iocsh-opcuasubscription)=
 ### Command `opcuaSubscription`
+
 Configures a new subscription and binds it to an existing session.
+
 ```
 opcuaSubscription <name> <session> <publishing_interval> [<options>]
 ```
+
 * `name`:
   Unique name for the subscription.
 * `session`:
@@ -94,10 +108,13 @@ opcuaSubscription <name> <session> <publishing_interval> [<options>]
 ## Setting Options
 
 ### Command `opcuaOptions`
+
 Sets options for existing sessions or subscriptions matching a pattern.
+
 ```
 opcuaOptions <pattern> [<options>]
 ```
+
 * `pattern`:
   Session or Subscription name glob pattern.
 * `options`:
@@ -172,22 +189,28 @@ for the session.
 :::
 
 ### Command `opcuaClientCertificate`
+
 Sets the client's own certificate and private key.
+
 ```
 opcuaClientCertificate <public_key> <private_key>
 ```
+
 * `public_key`:
   Path to the file containing the certificate (public key).
 * `private_key`:
   Path to the file containing the private key.
 
 ### Command `opcuaSetupPKI`
+
 Sets the location of the PKI certificate store,
 where certificates and revocation lists are stored.
+
 ```
 opcuaSetupPKI <PKI_location>
 opcuaSetupPKI <server_certs> <server_revocation_lists> <issuer_certs> <issuer_revocation_lists>
 ```
+
 * `PKI location`:
   Path to the standard PKI directory structure.
 * `server_certs`:
@@ -200,30 +223,39 @@ opcuaSetupPKI <server_certs> <server_revocation_lists> <issuer_certs> <issuer_re
   Path to the location of issuer revocation lists.
 
 ### Command `opcuaSaveRejected`
+
 Sets the location where rejected server certificates are saved.
+
 ```
 opcuaSaveRejected <rejected_cert_location>
 ```
+
 * `rejected_cert_location`:
   Path to the location for saving rejected server certificates.
 
 ### Command `opcuaShowSecurity`
+
 Shows discovered endpoints and security details for a session
 or (without argument) show security related information for the IOC.
+
 ```
 opcuaShowSecurity <session>
 opcuaShowSecurity
 ```
+
 * `session`:
   Name of the session to show security info for.
 
 ## Inspection and Debugging
 
 ### Command `opcuaShow`
+
 Shows details for sessions, subscriptions, or records.
+
 ```
 opcuaShow <pattern>, [<verbosity>]
 ```
+
 * `pattern`:
   Session or Subscription name glob pattern.
 * `verbosity`:

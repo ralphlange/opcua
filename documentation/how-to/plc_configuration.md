@@ -25,7 +25,6 @@ when respecting the following minimal requirements:
 | OPC UA via CP          | Supported via W1    |
 | Compatible CP          | CP 1543‑1 FW ≥ **V2.2** (recommended ≥ V3.0) |
 
-
 ## Configure OPC UA Server Options
 
 1. In the PLC properties,

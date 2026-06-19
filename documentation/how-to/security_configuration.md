@@ -64,13 +64,16 @@ and only readable by the user running the IOC.
 :::
 
 ### Username Identity Token
+
 In the identity file, set:
+
 ```
 user=<username>
 pass=<password>
 ```
 
 ### Certificate Identity Token
+
 In the identity file, set:
 
 ```
@@ -85,11 +88,13 @@ The `openssl` command line utility can be used
 to convert certificates between formats.
 
 **DER to PEM:**
+
 ```bash
 openssl x509 -inform der -in <cert>.der -out <cert>.pem
 ```
 
 **PEM to DER:**
+
 ```bash
 openssl x509 -in <cert>.pem -outform der -out <cert>.der
 ```

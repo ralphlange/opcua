@@ -64,6 +64,7 @@ such as attributes, references, methods, types, ...
 
 A _NodeID_ is an identifier for a node, e.g., for a particular OPC UA item.
 A Node ID consists of:
+
 * a namespace index number
 * an identifier type
 * an identifier.

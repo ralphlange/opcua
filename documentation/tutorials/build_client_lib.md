@@ -1,6 +1,7 @@
 # Building the Low-Level OPC UA Client Library
 
 Two options for the low-level client library are supported:
+
 * the free open-source client of the
   [open62541 project SDK][open62541]
 * the commercially available
@@ -14,6 +15,7 @@ when you switch between the options.
 
 Choose your option, then follow the appropriate instructions
 that provide all the details:
+
 * [**Building the open62541 client**](build-open62541)
 * [**Building the Unified Automation client**](build-uasdk)
 
