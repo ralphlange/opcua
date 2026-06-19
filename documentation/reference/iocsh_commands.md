@@ -136,30 +136,30 @@ opcuaOptions <pattern> [<options>]
 * - *Batch and Throttle*
   -
 * - `nodes-max`
-  - Maximum number of nodes used in any low-level service call<br>
+  - Maximum number of nodes used in any low-level service call\
     (client will split larger requests into multiple batches)
 * - `read-nodes-max`
-  - Maximum number of nodes per read service call<br>
+  - Maximum number of nodes per read service call\
     (client will split larger read requests into multiple batches)
 * - `read-timeout-min`
-  - Timeout (holdoff period) after read service call [ms]<br>
+  - Timeout (holdoff period) after read service call [ms]\
     (used for minimal one node request if read-timeout-max is set)
 * - `read-timeout-max`
-  - Timeout (holdoff period) after read service call<br>
+  - Timeout (holdoff period) after read service call\
     with maximum number of nodes [ms]
 * - `write-nodes-max`
-  - Maximum number of nodes per write service call<br>
+  - Maximum number of nodes per write service call\
     (client will split larger write requests into multiple batches)
 * - `write-timeout-min`
-  - Timeout (holdoff period) after write service call [ms]<br>
+  - Timeout (holdoff period) after write service call [ms]\
     (used for minimal one node request if write-timeout-max is set)
 * - `write-timeout-max`
-  - Timeout (holdoff period) after write service call<br>
+  - Timeout (holdoff period) after write service call\
     with maximum number of nodes [ms]
 * - *Security*
   -
 * - `sec-mode`
-  - Requested security mode [`Best`/`None`/`Sign`/`SignAndEncrypt`;<br>
+  - Requested security mode [`Best`/`None`/`Sign`/`SignAndEncrypt`;\
     default: `Best`; must use `None` for running with no security]
 * - `sec-policy`
   - Requested security policy [default: use best available]
