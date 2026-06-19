@@ -28,7 +28,7 @@ then your IOC application that uses it.
 
 Linux and Windows native builds are supported.
 
-## *Alternative:* Binary Distribution for Linux
+## _Alternative:_ Binary Distribution for Linux
 
 Please look at the "Assets" sections of specific releases
 on the [release page](https://github.com/epics-modules/opcua/releases)

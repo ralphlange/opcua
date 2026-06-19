@@ -21,7 +21,8 @@ Please contact the authors
 ## Prerequisites
 
 * Unified Automation C++ Based [OPC UA Client SDK][uasdk]
-  (1.5/1.6/1.7 are supported, as well as their evaluation bundles).
+  (1.5/1.6/1.7 are supported,
+  as well as their [evaluation bundles][uasdk-eval]).
 
 * Windows and Linux builds are supported.
 
