@@ -11,6 +11,7 @@
 #ifndef DEVOPCUA_REQUESTQUEUEBATCHER_H
 #define DEVOPCUA_REQUESTQUEUEBATCHER_H
 
+#include <atomic>
 #include <memory>
 #include <queue>
 #include <vector>
@@ -22,6 +23,7 @@
 #include <menuPriority.h>
 
 #include "devOpcua.h"
+#include "AdaptiveConcurrency.h"
 
 namespace DevOpcua {
 
@@ -102,6 +104,7 @@ public:
         , workerShutdown(false)
         , consumer(consumer)
         , sleep(sleep)
+        , acmgr(nullptr)
     {
         setParams(maxRequestsPerBatch, minHoldOff, maxHoldOff);
         if (startWorkerNow)
@@ -188,6 +191,20 @@ public:
     }
 
     /**
+     * @brief Sets the AdaptiveConcurrencyManager to use for throttling.
+     *
+     * When set, the worker thread calls canSendRequest() before each batch
+     * delivery, blocking if the concurrency window is full.
+     * Must be called before pushing requests.
+     *
+     * @param manager  pointer to the manager, or nullptr to disable
+     */
+    void setAdaptiveConcurrencyManager(AdaptiveConcurrencyManager *manager)
+    {
+        acmgr.store(manager, std::memory_order_release);
+    }
+
+    /**
      * @brief Sets batcher parameters.
      *
      * @param maxRequestsPerBatch  limit of items per service call
@@ -257,8 +274,11 @@ public:
                         workToDo.signal();
                 }
 
-                if (!batch.empty())
+                if (!batch.empty()) {
+                    if (auto *mgr = acmgr.load(std::memory_order_acquire))
+                        mgr->canSendRequest();
                     consumer.processRequests(batch);
+                }
 
                 { // Scope for parameter guard
                     Guard G(paramLock);
@@ -283,6 +303,7 @@ private:
     bool workerShutdown;
     RequestConsumer<T> &consumer;
     void (*sleep)(double);
+    std::atomic<AdaptiveConcurrencyManager*> acmgr;
 };
 
 } // namespace DevOpcua
