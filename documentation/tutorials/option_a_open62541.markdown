@@ -219,7 +219,7 @@ as well as its build and deploy features if necessary.
 You also need to configure the locations
 of the other dependencies that you installed.
 
-```Makefile
+```makefile
 # Path to the Open62541 C++ installation
 OPEN62541 = /other/location
 
@@ -249,7 +249,7 @@ This ensures that the configuration is always consistent.
 All paths in EPICS build configuration files
 must use Windows "short names" where needed, e.g.
 
-```Makefile
+```makefile
 OPEN62541 = C:/PROGRA~2/open62541-1.3.6-MinGW/
 ```
 

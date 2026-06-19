@@ -96,7 +96,7 @@ create a file `CONFIG_SITE.local`
 that sets the absolute path of your SDK installation
 as well as the SDK build and deploy features if necessary.
 
-```Makefile
+```makefile
 # Path to the Unified Automation OPC UA C++ SDK
 UASDK = /usr/local/opcua/uasdkcppclient-v1.5.3-346/sdk
 
@@ -134,7 +134,7 @@ and set `UASDK` to the location of the Unified Automation bundle.
 All paths in EPICS build configuration files
 must use Windows "short names" where needed, e.g.
 
-```Makefile
+```makefile
 UASDK = C:/PROGRA~2/UnifiedAutomation/UaSdkCppBundleEval
 ```
 
