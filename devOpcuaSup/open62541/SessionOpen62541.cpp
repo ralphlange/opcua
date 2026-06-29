@@ -628,6 +628,7 @@ SessionOpen62541::disconnect ()
         Guard G(clientlock);
         if(!client) return 0;
         clearCustomTypeDictionaries();
+        UA_Client_disconnect(client);
         UA_Client_delete(client); // This also deletes all open62541 subscriptions
         client = nullptr;
     }
@@ -2393,10 +2394,9 @@ SessionOpen62541::connectionStatusChanged (
     if (UA_STATUS_IS_BAD(newConnectStatus)) {
         if (debug)
             std::cout << "Session " << name
-                      << " irrecoverably failed: "
+                      << " failed: "
                       << UA_StatusCode_name(connectStatus)
                       << std::endl;
-        return;
     }
 
     if (newChannelState != channelState) {
@@ -2412,6 +2412,8 @@ SessionOpen62541::connectionStatusChanged (
                 // Deactivated by user or server shut down
                 markConnectionLoss();
                 registeredItemsNo = 0;
+                if (autoConnect && client)
+                    autoConnector.start();
                 break;
 #if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR < 104
             case UA_SECURECHANNELSTATE_FRESH:
@@ -2528,11 +2530,6 @@ SessionOpen62541::connectionStatusChanged (
                 // status needs to be updated before requests are being issued
                 sessionState = newSessionState;
                 reader.pushRequest(cargo, menuPriorityHIGH);
-                // Wait for initial read to finish
-                while (!reader.empty(menuPriorityHIGH)) {
-                    epicsThreadSleep(.1);
-                }
-                epicsThreadSleep(.1);
                 addAllMonitoredItems();
                 break;
             }
