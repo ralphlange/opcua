@@ -154,8 +154,9 @@ inline static std::ostream&
 operator << (std::ostream& os, UA_SecureChannelState channelState)
 {
     switch (channelState) {
+#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR < 104
         case UA_SECURECHANNELSTATE_FRESH:               return os << "Fresh";
-#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR >= 104
+#else
         case UA_SECURECHANNELSTATE_REVERSE_LISTENING:   return os << "ReverseListening";
         case UA_SECURECHANNELSTATE_CONNECTING:          return os << "Connecting";
         case UA_SECURECHANNELSTATE_CONNECTED:           return os << "Connected";
@@ -411,9 +412,15 @@ SessionOpen62541::setOption (const std::string &name, const std::string &value)
             // Loglevels:  0:trace, 1:debug, 2:info, 3:warning, 4:error, 5:fatal (and higher)
             // Our debug=0 shall only print fatal errors.
             // After that, the higher debug the lower UA_LogLevel, down to 0.
+#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR < 104
             if (config->logger.clear)
                 config->logger.clear(config->logger.context); // Use context as opaque handle only!
             config->logger = UA_Log_Stdout_withLevel(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+#else
+            if (config->logging && config->logging->clear)
+                config->logging->clear(config->logging);
+            config->logging = UA_Log_Stdout_new(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+#endif
         }
     } else if (name == "batch-nodes") {
         errlogPrintf("DEPRECATED: option 'batch-nodes'; use 'nodes-max' instead\n");
@@ -503,9 +510,15 @@ SessionOpen62541::connect (bool manual)
     }
     UA_ClientConfig *config = UA_Client_getConfig(client);
     if (debug < 5) {
+#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR < 104
         if (config->logger.clear)
             config->logger.clear(config->logger.context);
         config->logger = UA_Log_Stdout_withLevel(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+#else
+        if (config->logging && config->logging->clear)
+            config->logging->clear(config->logging);
+        config->logging = UA_Log_Stdout_new(static_cast<UA_LogLevel>(std::max(0, 5-debug)));
+#endif
     }
 #ifdef HAS_SECURITY
     // We need the client certificate before UA_ClientConfig_setDefaultEncryption
@@ -1409,7 +1422,12 @@ SessionOpen62541::setupIdentity()
                                 name.c_str());
                 } else {
                     UA_StatusCode status = config->certificateVerification.verifyCertificate(
-                        config->certificateVerification.context, &cert);
+#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR < 104
+                        config->certificateVerification.context,
+#else
+                        &config->certificateVerification,
+#endif
+                        &cert);
                     if (UA_STATUS_IS_BAD(connectStatus)) {
                         errlogPrintf("OPC UA session %s: identity certificate is not valid: %s\n",
                                     name.c_str(), UA_StatusCode_name(status));
@@ -2395,6 +2413,7 @@ SessionOpen62541::connectionStatusChanged (
                 markConnectionLoss();
                 registeredItemsNo = 0;
                 break;
+#if UA_OPEN62541_VER_MAJOR*100+UA_OPEN62541_VER_MINOR < 104
             case UA_SECURECHANNELSTATE_FRESH:
                 if (sessionState == UA_SESSIONSTATE_CREATED) {
                     // The server has shut down
@@ -2402,6 +2421,7 @@ SessionOpen62541::connectionStatusChanged (
                         autoConnector.start();
                 }
                 break;
+#endif
             case UA_SECURECHANNELSTATE_OPEN: {
                 // Connection to server has been established
                 break;
