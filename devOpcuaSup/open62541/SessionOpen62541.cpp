@@ -29,10 +29,6 @@
 #include <epicsExit.h>
 #include <epicsThread.h>
 #include <epicsAtomic.h>
-#include <osdSock.h>
-#ifdef CALLBACK
-#undef CALLBACK
-#endif
 #include <initHooks.h>
 #include <errlog.h>
 
