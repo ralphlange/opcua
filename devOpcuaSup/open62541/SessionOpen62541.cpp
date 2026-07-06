@@ -29,6 +29,7 @@
 #include <epicsExit.h>
 #include <epicsThread.h>
 #include <epicsAtomic.h>
+#include <osdSock.h>
 #include <initHooks.h>
 #include <errlog.h>
 
@@ -622,23 +623,22 @@ SessionOpen62541::connect (bool manual)
 long
 SessionOpen62541::disconnect ()
 {
-    Guard G(clientlock);
-    if (!client) {
-        if (debug)
-            std::cerr << "Session " << name
-                    << " already disconnected"
-                    << std::endl;
-        return 0;
+    {
+        Guard G(clientlock);
+        if (client) {
+            clearCustomTypeDictionaries();
+            UA_Client_disconnect(client);
+            UA_Client_delete(client); // This also deletes all open62541 subscriptions
+            client = nullptr;
+        }
+        sessionState = UA_SESSIONSTATE_CLOSED;
+        channelState = UA_SECURECHANNELSTATE_CLOSED;
+        markConnectionLoss();
     }
-
-    clearCustomTypeDictionaries();
-    UA_Client_delete(client); // This also deletes all open62541 subscriptions
-    client = nullptr;
 
     // Worker thread terminates when client was destroyed
     if (workerThread) {
         if (epicsThreadGetIdSelf() != workerThread->getId()) {
-            UnGuard U(G);
             workerThread->exitWait();
             delete workerThread;
             workerThread = nullptr;
@@ -646,9 +646,6 @@ SessionOpen62541::disconnect ()
             // Called from worker thread itself: it will exit by itself
         }
     }
-    sessionState = UA_SESSIONSTATE_CLOSED;
-    channelState = UA_SECURECHANNELSTATE_CLOSED;
-    markConnectionLoss();
 
     return 0;
 }
@@ -2464,6 +2461,13 @@ SessionOpen62541::connectionStatusChanged (
                 break;
             }
 
+            case UA_SESSIONSTATE_CLOSED:
+            case UA_SESSIONSTATE_CLOSING:
+            {
+                needsInit = false;
+                break;
+            }
+
             case UA_SESSIONSTATE_CREATED: {
                 if (sessionState == UA_SESSIONSTATE_ACTIVATED)
                     errlogPrintf("OPC UA session %s: disconnected\n", name.c_str());
@@ -2669,6 +2673,7 @@ SessionOpen62541::atExit (void *)
 void
 SessionOpen62541::initializeSession ()
 {
+    if (!client) return;
     UA_ClientConfig *config = UA_Client_getConfig(client);
     config->connectivityCheckInterval = 1000; // 1 sec
 
