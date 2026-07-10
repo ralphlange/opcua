@@ -206,7 +206,11 @@ public:
     /**
      * @brief Get pointer to enumChoices if typeId refers to enum type, else nullptr
      */
+#ifdef HAS_XMLPARSER
     const EnumChoices* getEnumChoices(const UA_NodeId* typeId);
+#else
+    const EnumChoices* getEnumChoices(const UA_NodeId* typeId) { return nullptr; }
+#endif
 
     /**
      * @brief Request a beginRead service for an item
@@ -394,6 +398,11 @@ private:
      */
     virtual void run() override;
 
+    /**
+     * @brief Initialize session after successful activation.
+     */
+    void initializeSession();
+
     // Wrapper for Session::securityPolicyString to match argument type
     static std::string securityPolicyString(const UA_String& policy)
     {
@@ -434,6 +443,7 @@ private:
     UA_SecureChannelState channelState;                           /**< status for this session */
     UA_SessionState sessionState;                                 /**< status for this session */
     UA_StatusCode connectStatus;                                  /**< status for this session */
+    bool needsInit;                                               /**< initialization needed after activation */
     unsigned int MaxNodesPerRead;                                 /**< server max number of nodes per write request */
     unsigned int MaxNodesPerWrite;                                /**< server max number of nodes per write request */
     epicsThread *workerThread;                                    /**< Asynchronous worker thread */
