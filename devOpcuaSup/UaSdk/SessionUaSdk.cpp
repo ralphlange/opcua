@@ -1413,6 +1413,9 @@ SessionUaSdk::atExit (void *junk)
         if (session->puasession && session->isConnected())
             session->disconnect();
     }
+    // Matches the UaPlatformLayer::init() call in Session::initOnce();
+    // needed to avoid the SDK's static destructors segfault on process exit
+    UaPlatformLayer::cleanup();
 }
 
 } // namespace DevOpcua
