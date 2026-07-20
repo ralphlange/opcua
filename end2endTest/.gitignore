@@ -1,0 +1,3 @@
+# end2endTest: server and Python cache
+server/opcuaTestServer
+__pycache__
