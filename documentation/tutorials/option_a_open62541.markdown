@@ -238,7 +238,8 @@ OPEN62541_USE_CRYPTO = YES
 OPEN62541_USE_XMLPARSER = YES
 ```
 
-See [Deployment Modes](deployment-modes) for details and recommendations on which mode to choose for your platform and situation.
+See [Deployment Modes](deployment-modes) for details and recommendations
+on which mode to choose for your platform and situation.
 
 This open62541 related configuration
 is only needed in the Device Support module.

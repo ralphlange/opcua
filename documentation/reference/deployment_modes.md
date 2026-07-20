@@ -95,7 +95,7 @@ the recommendation depends on how the low-level library is managed on the system
 
 - **System Packages:** Use `SYSTEM` when the low-level library
   has been installed using the system's package manager (such as `apt` or `yum`).
-- **Custom Location:** Use `PROVIDED` when the low-level library 
+- **Custom Location:** Use `PROVIDED` when the low-level library
   is deployed in a specific, non-standard location.
 - **Simplicity:** `EMBED` can be used for simplicity,
   particularly when the OPC UA Device Support

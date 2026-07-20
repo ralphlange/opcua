@@ -116,7 +116,8 @@ UASDK_USE_CRYPTO = YES
 UASDK_USE_XMLPARSER = YES
 ```
 
-See [Deployment Modes](deployment-modes) for details and recommendations on which mode to choose for your platform and situation.
+See [Deployment Modes](deployment-modes) for details and recommendations
+on which mode to choose for your platform and situation.
 
 This SDK related configuration is only needed in the Device Support module.
 During the build,
