@@ -151,6 +151,11 @@ are accessed by other regular input/output records.
   - Source of timestamp: `server`/`source`/`data`
 :::
 
+:::{note}
+To allow the Device Support to set the timestamp of a record,
+the record's `TSE` field must be set to `-2`.
+:::
+
 ### Example: Input Records for Elements of `$(P)FOO:OPCUA-ITEM`
 
 ```

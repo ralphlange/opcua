@@ -48,7 +48,7 @@ for accessing individual single scalar variables on the OPC UA server.
   - `n`
   - Register item with server for performance [`y`/`n`]
 * - `deadband`
-  - 0.0
+  - `0.0`
   - Deadband filter for subscriptions [double; 0.0 = no deadband]
 * - `bini`
   - `read`
@@ -59,6 +59,11 @@ for accessing individual single scalar variables on the OPC UA server.
 * - `timestamp`
   - `server`
   - Source of timestamp: `server`/`source`
+:::
+
+:::{note}
+To allow the Device Support to set the timestamp of a record,
+the record's `TSE` field must be set to `-2`.
 :::
 
 ## Example: Output Records with Monitor (Bidirectional Mode)
