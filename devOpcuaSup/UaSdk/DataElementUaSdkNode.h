@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <memory>
 
+#include <uagenericstructurevalue.h>
 #include <uavariant.h>
 
 #include "DataElementUaSdk.h"
@@ -51,6 +52,18 @@ private:
     virtual bool isDirty() const override { return true; }
     virtual void markAsDirty() override {}
 
+    /**
+     * @brief Push an already decoded structure (member of the parent) into this node.
+     *
+     * Avoids encoding the member into an ExtensionObject and decoding it again
+     * on every nesting level.
+     */
+    void setIncomingStructure(const UaGenericStructureValue &value, ProcessReason reason);
+    void dissectStructure(const UaGenericStructureValue &genericStruct, ProcessReason reason);
+    void setMissingMember(const std::shared_ptr<DataElementUaSdk> &pelem, int index);
+    /** @brief Latest incoming value as variant (ExtensionObject created on demand). */
+    UaVariant incomingVariant() const;
+
     void createMap(const std::string *timefrom = nullptr);
     void createMap(const UaLocalizedText&);
     void createMap(const UaQualifiedName&);
@@ -62,6 +75,8 @@ private:
     UaStructureDefinition definition; /**< cache of structure definition */
     int timesrc;
     bool mapped;
+    UaGenericStructureValue incomingStruct; /**< latest incoming value, if pushed down decoded by the parent */
+    bool hasIncomingStruct;                 /**< incomingStruct (not incomingData) holds the latest value */
 };
 
 }
