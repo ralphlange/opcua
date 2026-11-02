@@ -186,10 +186,20 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
         if (!mapped)
             createMap(timefrom);
 
+        // Decode the extension object only once (not once per member)
+        UaGenericUnionValue genericUnion;
+        UaGenericStructureValue genericStruct;
+        int unionIndex = -1;
+        if (definition.isUnion()) {
+            genericUnion.setGenericUnion(extensionObject, definition);
+            unionIndex = genericUnion.switchValue() - 1;
+        } else {
+            genericStruct.setGenericValue(extensionObject, definition);
+        }
+
         if (timefrom) {
-            if (timesrc >= 0)
-                pitem->tsData
-                    = epicsTimeFromUaVariant(UaGenericStructureValue(extensionObject, definition).value(timesrc));
+            if (timesrc >= 0 && !definition.isUnion())
+                pitem->tsData = epicsTimeFromUaVariant(genericStruct.value(timesrc));
             else
                 pitem->tsData = pitem->tsSource;
         }
@@ -198,17 +208,14 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
             auto pelem = it.second.lock();
             OpcUa_StatusCode stat;
             if (definition.isUnion()) {
-                UaGenericUnionValue genericValue(extensionObject, definition);
-                int index = genericValue.switchValue() - 1;
-                if (it.first == index) {
-                    pelem->setIncomingData(genericValue.value(), reason);
+                if (it.first == unionIndex) {
+                    pelem->setIncomingData(genericUnion.value(), reason);
                     stat = OpcUa_Good;
                 } else {
                     stat = OpcUa_BadNoData;
                 }
             } else {
-                const UaVariant memberValue
-                    = UaGenericStructureValue(extensionObject, definition).value(it.first, &stat);
+                const UaVariant memberValue = genericStruct.value(it.first, &stat);
                 if (stat == OpcUa_Good) {
                     pelem->setIncomingData(memberValue, reason);
                 }
