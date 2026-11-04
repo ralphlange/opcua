@@ -76,6 +76,7 @@ class SessionUaSdk
 {
     UA_DISABLE_COPY(SessionUaSdk);
     friend class SubscriptionUaSdk;
+    friend class SessionUaSdkTestAccess; // unit tests: replace the low level session
 
 public:
     /**
