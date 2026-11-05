@@ -10,11 +10,14 @@
 
 /*
  * Dissection of nested structures into the data element tree (UA SDK):
- * reading (incoming data into all leafs) and writing (one changed leaf
- * encoded back into the nested structure).
+ * reading (incoming data into all leafs), writing (one changed leaf
+ * encoded back into the nested structure) and the data timestamp taken
+ * from a structure member (timestamp=data with element).
  */
 
 #include <gtest/gtest.h>
+
+#include <epicsTime.h>
 
 #include <uaextensionobject.h>
 #include <uagenericstructurevalue.h>
@@ -32,6 +35,31 @@ protected:
     {
         NestedStructureFixture::SetUp();
         setShape({3, 3, 3});
+        createDefinitions();
+        createValue();
+    }
+
+    // Read all leafs; check that every record got the expected time stamp
+    void
+    expectRecordTimes(const epicsTime &expected)
+    {
+        update();
+        waitForCallbacks();
+        ASSERT_EQ(0u, drainAndCheck()) << "leafs with missing or wrong data";
+        unsigned int wrong = 0;
+        for (const auto &prec : records)
+            if (epicsTime(prec->time) != expected)
+                wrong++;
+        EXPECT_EQ(0u, wrong) << "records with unexpected time stamp";
+    }
+
+    // Data timestamp setup: "ts" member clearly different from the source timestamp
+    void
+    useTimestampElement(const std::string &element)
+    {
+        withTimestampMember = true;
+        tsValue = UaDateTime::fromTime_t(1700000000);
+        timestampElement = element;
         createDefinitions();
         createValue();
     }
@@ -85,6 +113,29 @@ TEST_F(StructureDissectTest, WriteNestedStructureMember)
                 double expected = (leafIndex(a, b, c) == leafIndex(1, 1, 1)) ? 42.0 : static_cast<double>(c);
                 EXPECT_EQ(expected, val) << "member m" << a << ".m" << b << ".m" << c;
             }
+}
+
+TEST_F(StructureDissectTest, TimestampFromStructureMember)
+{
+    useTimestampElement("ts");
+    build("dissectTsMember");
+    expectRecordTimes(ItemUaSdk::uaToEpicsTime(tsValue, 0));
+}
+
+TEST_F(StructureDissectTest, TimestampMemberNotFound)
+{
+    // Falls back to the source timestamp
+    useTimestampElement("nosuchmember");
+    build("dissectTsNotFound");
+    expectRecordTimes(ItemUaSdk::uaToEpicsTime(UaDateTime(dv.SourceTimestamp), 0));
+}
+
+TEST_F(StructureDissectTest, TimestampMemberWrongType)
+{
+    // m0 is a structure, not a DateTime: falls back to the source timestamp
+    useTimestampElement("m0");
+    build("dissectTsWrongType");
+    expectRecordTimes(ItemUaSdk::uaToEpicsTime(UaDateTime(dv.SourceTimestamp), 0));
 }
 
 } // namespace

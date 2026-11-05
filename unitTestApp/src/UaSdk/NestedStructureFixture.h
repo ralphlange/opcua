@@ -17,6 +17,10 @@
  * level are doubles; the value of each leaf is its member index (i.e. the
  * last index of its path).
  *
+ * Optionally (withTimestampMember), the outermost structure gets an additional
+ * DateTime member "ts" (value: tsValue, no record attached); with
+ * timestampElement set, the item uses that member as data timestamp.
+ *
  * The structure definitions are served by a stub UaSession that replaces the
  * session's low level SDK session (through the SessionUaSdkTestAccess hook).
  * The records' processing callbacks are no-ops (dpvt is NULL); the leaf
@@ -230,6 +234,14 @@ protected:
                 field.setValueRank(-1);
                 def.addChild(field);
             }
+            if (l == 0 && withTimestampMember) {
+                UaStructureField field;
+                field.setName("ts");
+                field.setDataTypeId(UaNodeId(OpcUaId_DateTime));
+                field.setValueType(OpcUaType_DateTime);
+                field.setValueRank(-1);
+                def.addChild(field);
+            }
         }
     }
 
@@ -248,6 +260,11 @@ protected:
             for (unsigned int i = 0; i < fanout[l]; i++)
                 EXPECT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), outer.setField(static_cast<int>(i), value));
             value = outer;
+        }
+        if (withTimestampMember) {
+            UaVariant ts;
+            ts.setDateTime(tsValue);
+            EXPECT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), value.setField(static_cast<int>(fanout[0]), ts));
         }
         UaExtensionObject eo;
         // UaGenericStructureValue::toExtensionObject() returns void in older SDK versions (<= 1.7.2)
@@ -289,6 +306,10 @@ protected:
         iinfo.samplingInterval = 0.0;
         iinfo.queueSize = 1;
         iinfo.clientQueueSize = 3;
+        if (!timestampElement.empty()) {
+            iinfo.timestamp = LinkOptionTimestamp::data;
+            iinfo.timestampElement = timestampElement;
+        }
 
         records.reserve(noOfLeafs);
         connectors.reserve(noOfLeafs);
@@ -370,6 +391,9 @@ protected:
     unsigned int noOfLeafs = 0;
     unsigned int noOfNodes = 0;
     std::vector<UaStructureDefinition> defs;
+    bool withTimestampMember = false; /**< add DateTime member "ts" to the outermost structure */
+    UaDateTime tsValue;               /**< value of the "ts" member */
+    std::string timestampElement;     /**< data timestamp element of the item (empty: server timestamp) */
     OpcUa_DataValue dv;
     StubUaSession *stub = nullptr;
     ItemUaSdk *item = nullptr;
