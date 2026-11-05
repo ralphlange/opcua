@@ -83,32 +83,38 @@ DataElementUaSdkNode::createMap (const std::string *timefrom)
     if (debug() >= 5)
         std::cout << " ** creating index-to-element map for child elements" << std::endl;
 
+    // Index the structure members by name once
+    // (avoids comparing every child element with every member: O(n^2) for wide structures)
+    const int noOfMembers = definition.childrenCount();
+    std::unordered_map<std::string, int> memberIndex;
+    memberIndex.reserve(noOfMembers);
+    for (int i = 0; i < noOfMembers; i++)
+        memberIndex.emplace(definition.child(i).name().toUtf8(), i);
+
     if (timefrom) {
-        for (int i = 0; i < definition.childrenCount(); i++) {
-            if (*timefrom == definition.child(i).name().toUtf8()) {
-                timesrc = i;
-            }
-        }
-        OpcUa_BuiltInType t = definition.child(timesrc).valueType();
+        auto found = memberIndex.find(*timefrom);
+        timesrc = (found != memberIndex.end()) ? found->second : -1;
         if (timesrc == -1) {
             errlogPrintf("%s: timestamp element %s not found - using source timestamp\n",
                          pitem->recConnector->getRecordName(),
                          timefrom->c_str());
-        } else if (t != OpcUaType_DateTime) {
-            errlogPrintf("%s: timestamp element %s has invalid type %s - using "
-                         "source timestamp\n",
-                         pitem->recConnector->getRecordName(),
-                         timefrom->c_str(),
-                         variantTypeString(t));
-            timesrc = -1;
+        } else {
+            OpcUa_BuiltInType t = definition.child(timesrc).valueType();
+            if (t != OpcUaType_DateTime) {
+                errlogPrintf("%s: timestamp element %s has invalid type %s - using "
+                             "source timestamp\n",
+                             pitem->recConnector->getRecordName(),
+                             timefrom->c_str(),
+                             variantTypeString(t));
+                timesrc = -1;
+            }
         }
     }
     for (const auto &it : elements) {
         auto pelem = it.lock();
-        for (int i = 0; i < definition.childrenCount(); i++) {
-            if (pelem->name == definition.child(i).name().toUtf8())
-                elementMap.insert({i, it});
-        }
+        auto found = memberIndex.find(pelem->name);
+        if (found != memberIndex.end())
+            elementMap.insert({found->second, it});
     }
     if (debug() >= 5)
         std::cout << " ** " << elementMap.size() << "/" << elements.size() << " child elements mapped to a "
