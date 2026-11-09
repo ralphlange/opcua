@@ -1460,9 +1460,10 @@ SessionOpen62541::setupIdentity()
                 } else {
                     UA_StatusCode status = config->certificateVerification.verifyCertificate(
                         config->certificateVerification.context, &cert);
-                    if (UA_STATUS_IS_BAD(connectStatus)) {
+                    if (UA_STATUS_IS_BAD(status)) {
                         errlogPrintf("OPC UA session %s: identity certificate is not valid: %s\n",
                                     name.c_str(), UA_StatusCode_name(status));
+                        UA_ByteString_clear(&cert);
                         return;
                     }
                 }
@@ -1472,6 +1473,7 @@ SessionOpen62541::setupIdentity()
                 errlogPrintf(
                     "OPC UA session %s: out of memory",
                     name.c_str());
+                UA_ByteString_clear(&cert);
                 return;
             }
             securityUserName = "Certificate user";
