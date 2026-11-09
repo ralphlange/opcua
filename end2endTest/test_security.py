@@ -54,7 +54,39 @@ def client_build_config() -> tuple[str, bool]:
     return client, crypto is not None
 
 
+def open62541_version() -> tuple[int, int] | None:
+    """Version (major, minor) of the open62541 library the module was built against."""
+    config = REPO_ROOT / "cfg" / "CONFIG_OPCUA"
+    if not config.exists():
+        return None
+    top = re.search(r"^OPEN62541\s*=\s*(\S+)", config.read_text(), re.MULTILINE)
+    if not top:
+        return None
+    top = Path(top.group(1))
+    for header in (top / "include" / "open62541" / "config.h",
+                   top / "include" / "open62541.h", top / "open62541.h"):
+        if header.exists():
+            text = header.read_text(errors="replace")
+            major = re.search(r"#define\s+UA_OPEN62541_VER_MAJOR\s+(\d+)", text)
+            minor = re.search(r"#define\s+UA_OPEN62541_VER_MINOR\s+(\d+)", text)
+            if major and minor:
+                return int(major.group(1)), int(minor.group(1))
+    return None
+
+
 CLIENT, HAS_CRYPTO = client_build_config()
+OPEN62541_VERSION = open62541_version() if CLIENT == "OPEN62541" else None
+
+# open62541 1.2 rejects any certificate with both keyCertSign and cRLSign key usage
+# (as a CA certificate) when establishing a secure channel. The self-signed test
+# certificates need these to sign their own CRLs (required by the UA SDK and by
+# CRL checking in open62541 1.3), so the IOC cannot connect to the test server.
+# (Tests expecting a rejection still pass.)
+xfail_open62541_1_2 = pytest.mark.xfail(
+    OPEN62541_VERSION is not None and OPEN62541_VERSION < (1, 3),
+    reason="open62541 1.2 client rejects the self-signed test certificates "
+           "(keyCertSign + cRLSign key usage)",
+    strict=False)
 
 pytestmark = pytest.mark.skipif(
     not HAS_CRYPTO, reason="module built without crypto support (no OPC UA security)")
@@ -214,6 +246,7 @@ POLICIES = ["Basic256Sha256", "Aes128_Sha256_RsaOaep"]
 
 
 class TestMessageSecurity:
+    @xfail_open62541_1_2
     @pytest.mark.parametrize("policy", POLICIES)
     @pytest.mark.parametrize("mode", MODES)
     def test_secure_session(self, start_secure, default_server_security,
@@ -233,6 +266,7 @@ class TestMessageSecurity:
         assert not ioc.is_running()
         assert server.exception is None
 
+    @xfail_open62541_1_2
     @pytest.mark.parametrize("mode", MODES)
     def test_mode_with_any_policy(self, start_secure, default_server_security,
                                   default_ioc_security, mode) -> None:
@@ -243,6 +277,7 @@ class TestMessageSecurity:
         assert session["mode"] == MODES[mode]
         assert session["policy"] in POLICIES
 
+    @xfail_open62541_1_2
     def test_best_mode(self, start_secure, default_server_security,
                        default_ioc_security) -> None:
         default_ioc_security.mode = "best"
@@ -252,6 +287,7 @@ class TestMessageSecurity:
         assert session["mode"] == ua.MessageSecurityMode.SignAndEncrypt
         check_read_write_monitor(server)
 
+    @xfail_open62541_1_2
     def test_reconnect(self, start_secure, default_server_security,
                        default_ioc_security) -> None:
         server, ioc = start_secure(default_server_security, default_ioc_security)
@@ -313,6 +349,7 @@ class TestUserAuthentication:
         default_server_security.identity_tokens = [ua.X509IdentityToken]
         return default_server_security
 
+    @xfail_open62541_1_2
     @pytest.mark.parametrize("mode", MODES)
     def test_username_password(self, start_secure, username_only,
                                default_ioc_security, mode) -> None:
