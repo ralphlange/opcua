@@ -10,6 +10,7 @@ The tests are skipped if the module was built without crypto support.
 
 import os
 import re
+import sys
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -88,6 +89,14 @@ xfail_open62541_1_2 = pytest.mark.xfail(
            "(keyCertSign + cRLSign key usage)",
     strict=False)
 
+# The open62541 client sets up the PKI (opcuaSetupPKI) only on Linux. Elsewhere,
+# its trust list stays empty and it rejects every server certificate.
+xfail_open62541_windows = pytest.mark.xfail(
+    CLIENT == "OPEN62541" and sys.platform == "win32",
+    reason="open62541 client: opcuaSetupPKI is not supported on Windows "
+           "(empty trust list, all server certificates are rejected)",
+    strict=False)
+
 pytestmark = pytest.mark.skipif(
     not HAS_CRYPTO, reason="module built without crypto support (no OPC UA security)")
 
@@ -103,18 +112,24 @@ class IocSecurity:
     identity: dict[str, str] | None = None  # contents of the sec-id file
 
 
+def iocsh_path(path: Path) -> str:
+    """Path for an iocsh script (iocsh treats backslashes as escapes;
+    forward slashes also work on Windows)."""
+    return path.as_posix()
+
+
 def write_startup_script(directory: Path, sec: IocSecurity) -> Path:
     lines = [
         'cd "$(OPCUA_TEST_TOP)"',
         'dbLoadDatabase("dbd/opcuaTestIoc.dbd")',
         "opcuaTestIoc_registerRecordDeviceDriver(pdbbase)",
-        f'opcuaSaveRejected("{directory / "rejected"}")',
+        f'opcuaSaveRejected("{iocsh_path(directory / "rejected")}")',
     ]
     if sec.pki is not None:
-        lines.append(f'opcuaSetupPKI("{sec.pki}")')
+        lines.append(f'opcuaSetupPKI("{iocsh_path(sec.pki)}")')
     if sec.client_cert is not None:
-        lines.append(f'opcuaClientCertificate("{sec.client_cert.cert_der}", '
-                     f'"{sec.client_cert.key_pem}")')
+        lines.append(f'opcuaClientCertificate("{iocsh_path(sec.client_cert.cert_der)}", '
+                     f'"{iocsh_path(sec.client_cert.key_pem)}")')
     lines += [
         'opcuaSession("OPC1", "opc.tcp://127.0.0.1:4840")',
         'opcuaSubscription("SUB1", "OPC1", 100)',
@@ -126,7 +141,7 @@ def write_startup_script(directory: Path, sec: IocSecurity) -> Path:
         id_file = directory / "identity"
         id_file.write_text("".join(f"{k}={v}\n" for k, v in sec.identity.items()))
         id_file.chmod(0o600)
-        lines.append(f'opcuaOptions("OPC1", "sec-id={id_file}")')
+        lines.append(f'opcuaOptions("OPC1", "sec-id={iocsh_path(id_file)}")')
     lines += [
         'opcuaOptions("OPC1", "debug=$(OPCUA_DEBUG=0)")',
         'dbLoadRecords("end2endTest/ioc/test_security.db", "OPCSUB=SUB1,NS=2")',
@@ -166,11 +181,12 @@ def default_ioc_security(certs) -> IocSecurity:
 def start_secure(monkeypatch, tmp_path) -> Generator[Callable[[ServerSecurity, IocSecurity],
                                                      tuple[OpcuaTestServer, DiagIOC]]]:
     """Factory starting the test server and the IOC with the given security setup."""
-    monkeypatch.setenv("OPCUA_TEST_TOP", str(REPO_ROOT))
+    monkeypatch.setenv("OPCUA_TEST_TOP", iocsh_path(REPO_ROOT))
     monkeypatch.setenv("OPCUA_DEBUG", os.environ.get("OPCUA_DEBUG", "1"))
     # Part of the IOC's application URI (must match the client certificate)
     monkeypatch.setenv("IOC", IOC_NAME)
-    executable = REPO_ROOT / "bin" / os.environ["EPICS_HOST_ARCH"] / "opcuaTestIoc"
+    exe_suffix = ".exe" if sys.platform == "win32" else ""
+    executable = REPO_ROOT / "bin" / os.environ["EPICS_HOST_ARCH"] / f"opcuaTestIoc{exe_suffix}"
 
     iocs = []
     with ExitStack() as stack:
@@ -247,6 +263,7 @@ POLICIES = ["Basic256Sha256", "Aes128_Sha256_RsaOaep"]
 
 class TestMessageSecurity:
     @xfail_open62541_1_2
+    @xfail_open62541_windows
     @pytest.mark.parametrize("policy", POLICIES)
     @pytest.mark.parametrize("mode", MODES)
     def test_secure_session(self, start_secure, default_server_security,
@@ -267,6 +284,7 @@ class TestMessageSecurity:
         assert server.exception is None
 
     @xfail_open62541_1_2
+    @xfail_open62541_windows
     @pytest.mark.parametrize("mode", MODES)
     def test_mode_with_any_policy(self, start_secure, default_server_security,
                                   default_ioc_security, mode) -> None:
@@ -278,6 +296,7 @@ class TestMessageSecurity:
         assert session["policy"] in POLICIES
 
     @xfail_open62541_1_2
+    @xfail_open62541_windows
     def test_best_mode(self, start_secure, default_server_security,
                        default_ioc_security) -> None:
         default_ioc_security.mode = "best"
@@ -288,6 +307,7 @@ class TestMessageSecurity:
         check_read_write_monitor(server)
 
     @xfail_open62541_1_2
+    @xfail_open62541_windows
     def test_reconnect(self, start_secure, default_server_security,
                        default_ioc_security) -> None:
         server, ioc = start_secure(default_server_security, default_ioc_security)
@@ -350,6 +370,7 @@ class TestUserAuthentication:
         return default_server_security
 
     @xfail_open62541_1_2
+    @xfail_open62541_windows
     @pytest.mark.parametrize("mode", MODES)
     def test_username_password(self, start_secure, username_only,
                                default_ioc_security, mode) -> None:

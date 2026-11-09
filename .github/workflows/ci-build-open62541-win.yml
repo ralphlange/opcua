@@ -98,7 +98,7 @@ jobs:
     - name: Build end2end test IOC
       run: python .ci/cue.py exec make -C end2endTest/ioc
     - name: Run end2end tests
-      run: python .ci/cue.py exec pytest -v end2endTest/test_opcua.py
+      run: python .ci/cue.py exec pytest -v end2endTest/test_opcua.py end2endTest/test_security.py
 
   build-msys2:
     name: ${{ matrix.name }}
