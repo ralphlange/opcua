@@ -266,6 +266,13 @@ protected:
             ts.setDateTime(tsValue);
             EXPECT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), value.setField(static_cast<int>(fanout[0]), ts));
         }
+        setDataValue(value);
+    }
+
+    // Incoming data value from a structure value (of type defs[0])
+    void
+    setDataValue(const UaGenericStructureValue &value)
+    {
         UaExtensionObject eo;
         // UaGenericStructureValue::toExtensionObject() returns void in older SDK versions (<= 1.7.2)
         value.toExtensionObject(eo);
@@ -285,8 +292,42 @@ protected:
     void
     build(const std::string &sessionName)
     {
+        build(sessionName, [](const std::vector<unsigned int> &) { return true; });
+    }
+
+    // As above, with records only for the leafs (index path) that the filter accepts
+    template <typename Filter>
+    void
+    build(const std::string &sessionName, Filter connect)
+    {
+        std::vector<std::list<std::string>> paths;
+        std::vector<unsigned int> idx(depth, 0);
+        expected.clear();
+        for (unsigned int n = 0; n < noOfLeafs; n++) {
+            if (connect(idx)) {
+                std::list<std::string> path;
+                for (unsigned int l = 0; l < depth; l++)
+                    path.push_back(fieldName(idx[l]));
+                paths.push_back(path);
+                expected.push_back(static_cast<double>(idx[depth - 1]));
+            }
+            // next index (odometer)
+            for (int l = static_cast<int>(depth) - 1; l >= 0; l--) {
+                if (++idx[l] < fanout[l])
+                    break;
+                idx[l] = 0;
+            }
+        }
+        buildPaths(sessionName, paths);
+    }
+
+    // Session, item and one record per element path (structure definitions: defs, root first)
+    void
+    buildPaths(const std::string &sessionName, const std::vector<std::list<std::string>> &paths)
+    {
+        const unsigned int noOfRecords = static_cast<unsigned int>(paths.size());
         // Every leaf requests record processing once per update
-        callbackSetQueueSize(static_cast<int>(noOfLeafs + 1000));
+        callbackSetQueueSize(static_cast<int>(noOfRecords + 1000));
         callbackInit();
         callbacksRunning = true;
         fence.reset(new CallbackFence);
@@ -311,16 +352,12 @@ protected:
             iinfo.timestampElement = timestampElement;
         }
 
-        records.reserve(noOfLeafs);
-        connectors.reserve(noOfLeafs);
-        std::vector<unsigned int> idx(depth, 0);
-        for (unsigned int n = 0; n < noOfLeafs; n++) {
-            std::list<std::string> path;
+        records.reserve(noOfRecords);
+        connectors.reserve(noOfRecords);
+        for (unsigned int n = 0; n < noOfRecords; n++) {
             std::string recname(sessionName);
-            for (unsigned int l = 0; l < depth; l++) {
-                path.push_back(fieldName(idx[l]));
-                recname += ":" + std::to_string(idx[l]);
-            }
+            for (const auto &elem : paths[n])
+                recname += ":" + elem;
             dbCommon *prec = static_cast<dbCommon *>(std::calloc(1, sizeof(dbCommon)));
             ASSERT_NE(nullptr, prec);
             records.emplace_back(prec, &std::free);
@@ -332,7 +369,7 @@ protected:
             connectors.emplace_back(pcon);
             std::unique_ptr<linkInfo> pinfo(new linkInfo(iinfo));
             pinfo->linkedToItem = (n == 0);
-            pinfo->elementPath = path;
+            pinfo->elementPath = paths[n];
             pcon->plinkinfo = std::move(pinfo);
             if (n == 0) {
                 // As in the device support: the item is created from (and keeps a reference to)
@@ -344,13 +381,6 @@ protected:
             pcon->plinkinfo->item = item;
             pcon->pitem = item;
             DataElement::addElementToTree(item, pcon, pcon->plinkinfo->elementPath);
-
-            // next index (odometer)
-            for (int l = static_cast<int>(depth) - 1; l >= 0; l--) {
-                if (++idx[l] < fanout[l])
-                    break;
-                idx[l] = 0;
-            }
         }
 
         item->setState(ConnectionStatus::up);
@@ -380,7 +410,7 @@ protected:
             epicsFloat64 val = -1.0;
             ProcessReason next = ProcessReason::none;
             long status = connectors[n]->readScalar(&val, &next);
-            if (status || val != static_cast<double>(n % fanout[depth - 1]) || next != ProcessReason::none)
+            if (status || val != expected[n] || next != ProcessReason::none)
                 bad++;
         }
         return bad;
@@ -391,6 +421,7 @@ protected:
     unsigned int noOfLeafs = 0;
     unsigned int noOfNodes = 0;
     std::vector<UaStructureDefinition> defs;
+    std::vector<double> expected; /**< expected value per record (build()) */
     bool withTimestampMember = false; /**< add DateTime member "ts" to the outermost structure */
     UaDateTime tsValue;               /**< value of the "ts" member */
     std::string timestampElement;     /**< data timestamp element of the item (empty: server timestamp) */

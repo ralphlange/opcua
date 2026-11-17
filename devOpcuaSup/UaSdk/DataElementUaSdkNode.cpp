@@ -23,7 +23,9 @@
 #include <uadatetime.h>
 #include <uaenumdefinition.h>
 #include <uaextensionobject.h>
+#include <uagenericoptionsetvalue.h>
 #include <uagenericunionvalue.h>
+#include <uastructurefielddata.h>
 
 #include <alarm.h>
 #include <epicsTime.h>
@@ -34,11 +36,129 @@
 
 namespace DevOpcua {
 
+namespace {
+
+// Gives access to the SDK's decoding of a single structure field
+// (UaAbstractGenericValue::readField() is protected and does not depend on the object)
+class FieldReader : public UaGenericStructureValue
+{
+public:
+    using UaAbstractGenericValue::readField;
+};
+
+const FieldReader &
+fieldReader ()
+{
+    static const FieldReader reader;
+    return reader;
+}
+
+// Compatibility with older UA SDK versions (seen with <= 1.7.2), detected at compile time
+// (the 'int' overload is preferred if it compiles, else the 'long' one is used):
+// - UaBinaryDecoder has no nesting depth check
+// - UaAbstractGenericValue::readField() has no status argument
+// - UaAbstractGenericValue::toVariant() returns void
+
+template<typename D>
+auto
+checkNestingDepth (D &decoder, int) -> decltype(decoder.checkNestingDepth())
+{
+    return decoder.checkNestingDepth();
+}
+
+template<typename D>
+OpcUa_StatusCode
+checkNestingDepth (D &, long)
+{
+    return OpcUa_Good;
+}
+
+template<typename D>
+auto
+decrementNestingDepth (D &decoder, int) -> decltype(decoder.decrementNestingDepth())
+{
+    decoder.decrementNestingDepth();
+}
+
+template<typename D>
+void
+decrementNestingDepth (D &, long)
+{}
+
+template<typename R>
+auto
+readField (const R &reader, UaAbstractDecoder *decoder, const UaStructureField &field, OpcUa_StatusCode &status, int)
+    -> decltype(reader.readField(decoder, field, status))
+{
+    return reader.readField(decoder, field, status);
+}
+
+template<typename R>
+UaStructureFieldData
+readField (const R &reader, UaAbstractDecoder *decoder, const UaStructureField &field, OpcUa_StatusCode &status, long)
+{
+    status = OpcUa_Good; // errors are not reported
+    return reader.readField(decoder, field);
+}
+
+template<typename T>
+auto
+toVariant (const T &value, UaVariant &variant, int) -> decltype(OpcUa_StatusCode(value.toVariant(variant)))
+{
+    return value.toVariant(variant);
+}
+
+template<typename T>
+OpcUa_StatusCode
+toVariant (const T &value, UaVariant &variant, long)
+{
+    value.toVariant(variant);
+    return OpcUa_Good;
+}
+
+// Member is a scalar structure (not a union) - decoded by the SDK into a UaGenericStructureValue
+// (see UaAbstractGenericValue::readField())
+bool
+isNestedStructure (const UaStructureField &field)
+{
+    if (field.arrayType() != UaStructureField::ArrayType_Scalar || field.valueType() != OpcUaType_ExtensionObject
+        || field.typeId() == OpcUaId_Structure)
+        return false;
+    const UaStructureDefinition def = field.structureDefinition();
+    return !def.isNull() && !def.isUnion();
+}
+
+// Field data as variant (as UaGenericStructureValue::value() does it)
+OpcUa_StatusCode
+fieldDataToVariant (const UaStructureFieldData &data, UaVariant &value)
+{
+    switch (data.type()) {
+    case DataVariant:
+        value = data.variant();
+        return OpcUa_Good;
+    case DataGenericStructure:
+        return toVariant(data.value(), value, 0);
+    case DataGenericStructureArray:
+        return toVariant(data.valueArray(), value, 0);
+    case DataGenericUnion:
+        return toVariant(data.genericUnion(), value, 0);
+    case DataGenericUnionArray:
+        return toVariant(data.genericUnionArray(), value, 0);
+    case DataGenericOptionSet:
+        return toVariant(data.genericOptionSet(), value, 0);
+    case DataGenericOptionSetArray:
+        return toVariant(data.genericOptionSetArray(), value, 0);
+    default:
+        return OpcUa_BadInternalError;
+    }
+}
+
+} // namespace
+
 DataElementUaSdkNode::DataElementUaSdkNode (const std::string &name, class ItemUaSdk *pitem)
     : DataElementUaSdk(name, pitem)
     , timesrc(-1)
     , mapped(false)
-    , hasIncomingStruct(false)
 {
     pitem->dataTreeNoOfNodes++;
 }
@@ -110,11 +230,20 @@ DataElementUaSdkNode::createMap (const std::string *timefrom)
             }
         }
     }
+    fields.resize(noOfMembers);
+    nestedStructure.resize(noOfMembers);
+    memberElements.assign(noOfMembers, std::weak_ptr<DataElementUaSdk>());
+    for (int i = 0; i < noOfMembers; i++) {
+        fields[i] = definition.child(i);
+        nestedStructure[i] = isNestedStructure(fields[i]);
+    }
     for (const auto &it : elements) {
         auto pelem = it.lock();
         auto found = memberIndex.find(pelem->name);
-        if (found != memberIndex.end())
+        if (found != memberIndex.end()) {
             elementMap.insert({found->second, it});
+            memberElements[found->second] = it;
+        }
     }
     if (debug() >= 5)
         std::cout << " ** " << elementMap.size() << "/" << elements.size() << " child elements mapped to a "
@@ -165,7 +294,6 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
                                        const UaNodeId *typeId)
 {
     incomingData = value;
-    hasIncomingStruct = false;
 
     if (debug() >= 5)
         std::cout << "Element " << name << " splitting structured data to " << elements.size() << " child elements"
@@ -194,25 +322,12 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
         if (!mapped)
             createMap(timefrom);
 
-        // Decode the extension object only once (not once per member)
-        UaGenericUnionValue genericUnion;
-        UaGenericStructureValue genericStruct;
-        int unionIndex = -1;
-        if (definition.isUnion()) {
-            genericUnion.setGenericUnion(extensionObject, definition);
-            unionIndex = genericUnion.switchValue() - 1;
-        } else {
-            genericStruct.setGenericValue(extensionObject, definition);
-        }
-
-        if (timefrom) {
-            if (timesrc >= 0 && !definition.isUnion())
-                pitem->tsData = epicsTimeFromUaVariant(genericStruct.value(timesrc));
-            else
-                pitem->tsData = pitem->tsSource;
-        }
+        if (timefrom)
+            pitem->tsData = pitem->tsSource; // unless set from the structure member
 
         if (definition.isUnion()) {
+            UaGenericUnionValue genericUnion(extensionObject, definition);
+            const int unionIndex = genericUnion.switchValue() - 1;
             for (const auto &it : elementMap) {
                 auto pelem = it.second.lock();
                 if (it.first == unionIndex)
@@ -220,7 +335,40 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
                 else
                     setMissingMember(pelem, it.first);
             }
+        } else if (extensionObject.encoding() == UaExtensionObject::Binary) {
+            // Decode the body directly into the child elements
+            // (as UaGenericStructureValue::setExtensionObject() sets up the decoder)
+            const OpcUa_ExtensionObject *pext = static_cast<const OpcUa_ExtensionObject *>(extensionObject);
+            UaByteString body;
+            body.attach(&pext->Body.Binary);
+            UaBinaryDecoder decoder;
+            OpcUa_StatusCode status = decoder.create(body).statusCode();
+            if (OpcUa_IsGood(status)) {
+                // Leaf updates are held back until the data timestamp (member) has been decoded
+                UpdateSink pending;
+                const bool deferUpdates = (timefrom && timesrc >= 0);
+                status = decodeStructure(decoder, reason, deferUpdates ? &pending : nullptr);
+                if (OpcUa_IsGood(status)) {
+                    for (const auto &u : pending) {
+                        if (u.missingIndex >= 0)
+                            u.owner->setMissingMember(u.pelem, u.missingIndex);
+                        else
+                            u.pelem->setIncomingData(u.value, u.reason);
+                    }
+                }
+                decoder.clear();
+            }
+            body.detach();
+            if (OpcUa_IsBad(status))
+                errlogPrintf("%s: decoding structured data of element %s (encodingTypeId %s) failed: %s\n",
+                             pitem->recConnector->getRecordName(),
+                             name.c_str(),
+                             extensionObject.encodingTypeId().toString().toUtf8(),
+                             UaStatus(status).toString().toUtf8());
         } else {
+            UaGenericStructureValue genericStruct(extensionObject, definition);
+            if (timefrom && timesrc >= 0)
+                pitem->tsData = epicsTimeFromUaVariant(genericStruct.value(timesrc));
             dissectStructure(genericStruct, reason);
         }
         break;
@@ -275,25 +423,144 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
     }
 }
 
-void
-DataElementUaSdkNode::setIncomingStructure (const UaGenericStructureValue &value, ProcessReason reason)
+OpcUa_StatusCode
+DataElementUaSdkNode::decodeStructure (UaBinaryDecoder &decoder, ProcessReason reason, UpdateSink *deferred)
 {
-    // The raw value (ExtensionObject) is only created when needed (see incomingVariant())
+    // Same decoding as UaGenericStructureValue::decode()
+    OpcUa_StatusCode status = checkNestingDepth(decoder, 0);
+    if (OpcUa_IsBad(status))
+        return status;
+
+    const bool hasOptionalFields = definition.hasOptionalFields();
+    OpcUa_UInt32 mask = 0;
+    OpcUa_UInt32 bit = 1;
+    if (hasOptionalFields)
+        status = decoder.readUInt32("EncodingMask", mask);
+
+    const int noOfMembers = static_cast<int>(fields.size());
+    for (int i = 0; i < noOfMembers && !OpcUa_IsBad(status); i++) {
+        const UaStructureField &field = fields[i];
+        const std::shared_ptr<DataElementUaSdk> pelem = memberElements[i].lock();
+
+        if (hasOptionalFields && field.isOptional()) {
+            const bool present = (mask & bit) != 0;
+            bit <<= 1;
+            if (!present) {
+                if (pelem)
+                    deliverMissing(pelem, i, deferred);
+                continue;
+            }
+        }
+
+        if (nestedStructure[i]) {
+            if (!pelem) {
+                status = skipStructure(decoder, field.structureDefinition());
+                continue;
+            }
+            if (!pelem->isLeaf()) {
+                status = std::static_pointer_cast<DataElementUaSdkNode>(pelem)
+                             ->decodeNestedStructure(decoder, field.structureDefinition(), reason, deferred);
+                continue;
+            }
+            // A leaf connected to a structure member gets the structure (as ExtensionObject)
+        }
+
+        const UaStructureFieldData data = readField(fieldReader(), &decoder, field, status, 0);
+        if (OpcUa_IsBad(status))
+            break;
+        if (!pelem && i != timesrc)
+            continue;
+        if (field.isOptional() && data.isEmpty()) {
+            if (pelem)
+                deliverMissing(pelem, i, deferred);
+            continue;
+        }
+        UaVariant memberValue;
+        if (fieldDataToVariant(data, memberValue) != OpcUa_Good)
+            continue;
+        if (i == timesrc)
+            pitem->tsData = epicsTimeFromUaVariant(memberValue);
+        if (pelem)
+            deliver(pelem, memberValue, reason, deferred);
+    }
+
+    decrementNestingDepth(decoder, 0);
+    return status;
+}
+
+OpcUa_StatusCode
+DataElementUaSdkNode::decodeNestedStructure (UaBinaryDecoder &decoder,
+                                             const UaStructureDefinition &memberDefinition,
+                                             ProcessReason reason,
+                                             UpdateSink *deferred)
+{
+    // The current value is provided by the parent when needed (see buildOutgoingData())
     incomingData.clear();
-    incomingStruct = value;
-    hasIncomingStruct = true;
 
     if (debug() >= 5)
-        std::cout << "Element " << name << " splitting decoded structure to " << elements.size()
-                  << " child elements" << std::endl;
+        std::cout << "Element " << name << " decoding nested structure to " << elements.size() << " child elements"
+                  << std::endl;
 
-    // The decoded value carries its definition - no need to query the session
+    // The parent's definition includes the nested one - no need to query the session
     if (definition.isNull())
-        definition = value.definition();
+        definition = memberDefinition;
     if (!mapped)
         createMap();
 
-    dissectStructure(value, reason);
+    return decodeStructure(decoder, reason, deferred);
+}
+
+OpcUa_StatusCode
+DataElementUaSdkNode::skipStructure (UaBinaryDecoder &decoder, const UaStructureDefinition &def)
+{
+    OpcUa_StatusCode status = checkNestingDepth(decoder, 0);
+    if (OpcUa_IsBad(status))
+        return status;
+
+    const bool hasOptionalFields = def.hasOptionalFields();
+    OpcUa_UInt32 mask = 0;
+    OpcUa_UInt32 bit = 1;
+    if (hasOptionalFields)
+        status = decoder.readUInt32("EncodingMask", mask);
+
+    const int noOfMembers = def.childrenCount();
+    for (int i = 0; i < noOfMembers && !OpcUa_IsBad(status); i++) {
+        const UaStructureField field = def.child(i);
+        if (hasOptionalFields && field.isOptional()) {
+            const bool present = (mask & bit) != 0;
+            bit <<= 1;
+            if (!present)
+                continue;
+        }
+        if (isNestedStructure(field))
+            status = skipStructure(decoder, field.structureDefinition());
+        else
+            readField(fieldReader(), &decoder, field, status, 0);
+    }
+
+    decrementNestingDepth(decoder, 0);
+    return status;
+}
+
+void
+DataElementUaSdkNode::deliver (const std::shared_ptr<DataElementUaSdk> &pelem,
+                               const UaVariant &value,
+                               ProcessReason reason,
+                               UpdateSink *deferred)
+{
+    if (deferred)
+        deferred->push_back({pelem, value, reason, this, -1});
+    else
+        pelem->setIncomingData(value, reason);
+}
+
+void
+DataElementUaSdkNode::deliverMissing (const std::shared_ptr<DataElementUaSdk> &pelem, int index, UpdateSink *deferred)
+{
+    if (deferred)
+        deferred->push_back({pelem, UaVariant(), ProcessReason::readFailure, this, index});
+    else
+        setMissingMember(pelem, index);
 }
 
 void
@@ -302,18 +569,10 @@ DataElementUaSdkNode::dissectStructure (const UaGenericStructureValue &genericSt
     for (const auto &it : elementMap) {
         auto pelem = it.second.lock();
         OpcUa_StatusCode stat = OpcUa_Good;
-        if (!pelem->isLeaf() && genericStruct.valueType(it.first) == DataGenericStructure) {
-            // Nested structure: hand down the already decoded member,
-            // avoiding to encode it into an ExtensionObject and decode it again
-            const UaGenericStructureValue member = genericStruct.genericStructure(it.first, &stat);
-            if (stat == OpcUa_Good)
-                std::static_pointer_cast<DataElementUaSdkNode>(pelem)->setIncomingStructure(member, reason);
-        } else {
-            const UaVariant memberValue = genericStruct.value(it.first, &stat);
-            if (stat == OpcUa_Good)
-                pelem->setIncomingData(memberValue, reason);
-        }
-        if (stat == OpcUa_BadNoData)
+        const UaVariant memberValue = genericStruct.value(it.first, &stat);
+        if (stat == OpcUa_Good)
+            pelem->setIncomingData(memberValue, reason);
+        else if (stat == OpcUa_BadNoData)
             setMissingMember(pelem, it.first);
     }
 }
@@ -332,18 +591,6 @@ DataElementUaSdkNode::setMissingMember (const std::shared_ptr<DataElementUaSdk> 
                   << variantTypeString((OpcUa_BuiltInType) fakeValue.Datatype)
                   << (fakeValue.ArrayType ? " array" : " scalar") << std::endl;
     pelem->setIncomingData(fakeValue, ProcessReason::readFailure);
-}
-
-UaVariant
-DataElementUaSdkNode::incomingVariant () const
-{
-    if (!hasIncomingStruct)
-        return incomingData;
-    UaExtensionObject extensionObject;
-    incomingStruct.toExtensionObject(extensionObject);
-    UaVariant value;
-    value.setExtensionObject(extensionObject, OpcUa_True);
-    return value;
 }
 
 void
@@ -367,19 +614,26 @@ DataElementUaSdkNode::setState (const ConnectionStatus state)
         mapped = false;
         definition.clear();
         timesrc = -1;
-        incomingStruct.clear();
-        hasIncomingStruct = false;
+        fields.clear();
+        nestedStructure.clear();
+        memberElements.clear();
     }
 }
 
 const UaVariant &
 DataElementUaSdkNode::getOutgoingData ()
 {
+    return buildOutgoingData(incomingData);
+}
+
+const UaVariant &
+DataElementUaSdkNode::buildOutgoingData (const UaVariant &current)
+{
     if (debug() >= 4)
         std::cout << "Element " << name << " updating structured data from " << elements.size() << " child elements"
                   << std::endl;
 
-    outgoingData = incomingVariant();
+    outgoingData = current;
     bool isdirty = false;
     switch (outgoingData.type()) {
     case OpcUaType_ExtensionObject: {
@@ -431,7 +685,13 @@ DataElementUaSdkNode::getOutgoingData ()
                 {
                     Guard G(pelem->outgoingLock);
                     if (pelem->isDirty()) {
-                        genericStruct.setField(it.first, pelem->getOutgoingData());
+                        if (pelem->isLeaf())
+                            genericStruct.setField(it.first, pelem->getOutgoingData());
+                        else
+                            // Nested nodes do not keep their incoming value (see decodeNestedStructure())
+                            genericStruct.setField(it.first,
+                                                   std::static_pointer_cast<DataElementUaSdkNode>(pelem)
+                                                       ->buildOutgoingData(genericStruct.value(it.first)));
                         pelem->isdirty = false;
                         isdirty = true;
                         updated = true;
