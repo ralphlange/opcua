@@ -268,6 +268,7 @@ public:
                                  ProcessReason reason,
                                  const std::string *timefrom = nullptr,
                                  const UaNodeId *typeId = nullptr) override;
+    virtual void takeIncomingData(UaVariant &value, ProcessReason reason) override;
     virtual void setIncomingEvent(ProcessReason reason) override;
     virtual void setState(const ConnectionStatus state) override;
     virtual const UaVariant &getOutgoingData() override;
@@ -650,6 +651,11 @@ public:
     virtual long int writeArray(const char *value, epicsUInt32 len, const epicsUInt32 num, dbCommon *prec) override;
 
 private:
+    /** @brief Incoming data for this reason is queued (for the record) in the current state. */
+    bool acceptsIncomingData(ProcessReason reason) const;
+    /** @brief Queue an incoming update for the record. */
+    void pushIncomingUpdate(std::shared_ptr<UpdateUaSdk> update, ProcessReason reason);
+
     virtual bool isDirty () const override { return isdirty; }
     virtual void markAsDirty () override
     {

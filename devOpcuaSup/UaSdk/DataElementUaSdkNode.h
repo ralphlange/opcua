@@ -87,8 +87,9 @@ private:
     /** @brief Decode a structure that has no element in the tree, discarding the data. */
     static OpcUa_StatusCode skipStructure(UaBinaryDecoder &decoder, const UaStructureDefinition &def);
 
+    /** @brief Deliver (or collect) the update for a child element, taking over the value. */
     void deliver(const std::shared_ptr<DataElementUaSdk> &pelem,
-                 const UaVariant &value,
+                 UaVariant &value,
                  ProcessReason reason,
                  UpdateSink *deferred);
     void deliverMissing(const std::shared_ptr<DataElementUaSdk> &pelem, int index, UpdateSink *deferred);
