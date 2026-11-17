@@ -119,7 +119,7 @@ DataElementOpen62541Leaf::setIncomingData (const UA_Variant &value, ProcessReaso
     if ((pconnector->state() == ConnectionStatus::initialRead
          && (reason == ProcessReason::readComplete || reason == ProcessReason::readFailure))
         || (pconnector->state() == ConnectionStatus::up)) {
-        Guard(pconnector->lock);
+        Guard G(pconnector->lock);
         bool wasFirst = false;
         // Make a copy of the value for this element and put it on the queue
         UA_Variant *valuecopy(new UA_Variant);
@@ -139,7 +139,7 @@ DataElementOpen62541Leaf::setIncomingData (const UA_Variant &value, ProcessReaso
 void
 DataElementOpen62541Leaf::setIncomingEvent (ProcessReason reason)
 {
-    Guard(pconnector->lock);
+    Guard G(pconnector->lock);
     if (reason == ProcessReason::connectionLoss && enumChoices)
         enumChoices = nullptr;
     bool wasFirst = false;
@@ -157,7 +157,7 @@ DataElementOpen62541Leaf::setIncomingEvent (ProcessReason reason)
 void
 DataElementOpen62541Leaf::setState (const ConnectionStatus state)
 {
-    Guard(pconnector->lock);
+    Guard G(pconnector->lock);
     pconnector->setState(state);
 }
 

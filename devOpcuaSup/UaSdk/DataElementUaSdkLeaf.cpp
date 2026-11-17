@@ -141,7 +141,7 @@ DataElementUaSdkLeaf::acceptsIncomingData (ProcessReason reason) const
 void
 DataElementUaSdkLeaf::pushIncomingUpdate (std::shared_ptr<UpdateUaSdk> update, ProcessReason reason)
 {
-    Guard(pconnector->lock);
+    Guard G(pconnector->lock);
     bool wasFirst = false;
     incomingQueue.pushUpdate(std::move(update), &wasFirst);
     if (debug() >= 5)
@@ -155,7 +155,7 @@ DataElementUaSdkLeaf::pushIncomingUpdate (std::shared_ptr<UpdateUaSdk> update, P
 void
 DataElementUaSdkLeaf::setIncomingEvent (ProcessReason reason)
 {
-    Guard(pconnector->lock);
+    Guard G(pconnector->lock);
     bool wasFirst = false;
     UpdateUaSdk *u(new UpdateUaSdk(getIncomingTimeStamp(), reason));
     incomingQueue.pushUpdate(std::shared_ptr<UpdateUaSdk>(u), &wasFirst);
@@ -170,7 +170,7 @@ DataElementUaSdkLeaf::setIncomingEvent (ProcessReason reason)
 void
 DataElementUaSdkLeaf::setState(const ConnectionStatus state)
 {
-    Guard(pconnector->lock);
+    Guard G(pconnector->lock);
     pconnector->setState(state);
 }
 
