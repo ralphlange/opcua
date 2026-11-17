@@ -105,21 +105,51 @@ DataElementUaSdkLeaf::setIncomingData (const UaVariant &value,
         delete enumChoices;
         enumChoices = pitem->session->getEnumChoices(typeId);
     }
-    if ((pconnector->state() == ConnectionStatus::initialRead
-         && (reason == ProcessReason::readComplete || reason == ProcessReason::readFailure))
-        || (pconnector->state() == ConnectionStatus::up)) {
-        Guard(pconnector->lock);
-        bool wasFirst = false;
+    if (acceptsIncomingData(reason)) {
         // Make a copy of the value for this element and put it on the queue
-        UpdateUaSdk *u(new UpdateUaSdk(getIncomingTimeStamp(), reason, value, getIncomingReadStatus()));
-        incomingQueue.pushUpdate(std::shared_ptr<UpdateUaSdk>(u), &wasFirst);
-        if (debug() >= 5)
-            std::cout << "Element " << name << " set data (" << processReasonString(reason) << ") for record "
-                      << pconnector->getRecordName() << " (queue use " << incomingQueue.size() << "/"
-                      << incomingQueue.capacity() << ")" << std::endl;
-        if (wasFirst)
-            pconnector->requestRecordProcessing(reason);
+        pushIncomingUpdate(
+            std::make_shared<UpdateUaSdk>(getIncomingTimeStamp(), reason, value, getIncomingReadStatus()),
+            reason);
     }
+}
+
+void
+DataElementUaSdkLeaf::takeIncomingData (UaVariant &value, ProcessReason reason)
+{
+    incomingData = value;
+
+    if (acceptsIncomingData(reason)) {
+        // Move the data of the value into the update (no deep copy)
+        std::unique_ptr<UaVariant> data(new UaVariant);
+        data->attach(value);
+        value.detach();
+        pushIncomingUpdate(
+            std::make_shared<UpdateUaSdk>(getIncomingTimeStamp(), reason, std::move(data), getIncomingReadStatus()),
+            reason);
+    }
+}
+
+bool
+DataElementUaSdkLeaf::acceptsIncomingData (ProcessReason reason) const
+{
+    const ConnectionStatus state = pconnector->state();
+    return (state == ConnectionStatus::initialRead
+            && (reason == ProcessReason::readComplete || reason == ProcessReason::readFailure))
+           || state == ConnectionStatus::up;
+}
+
+void
+DataElementUaSdkLeaf::pushIncomingUpdate (std::shared_ptr<UpdateUaSdk> update, ProcessReason reason)
+{
+    Guard(pconnector->lock);
+    bool wasFirst = false;
+    incomingQueue.pushUpdate(std::move(update), &wasFirst);
+    if (debug() >= 5)
+        std::cout << "Element " << name << " set data (" << processReasonString(reason) << ") for record "
+                  << pconnector->getRecordName() << " (queue use " << incomingQueue.size() << "/"
+                  << incomingQueue.capacity() << ")" << std::endl;
+    if (wasFirst)
+        pconnector->requestRecordProcessing(reason);
 }
 
 void

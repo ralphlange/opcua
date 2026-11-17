@@ -349,11 +349,11 @@ DataElementUaSdkNode::setIncomingData (const UaVariant &value,
                 const bool deferUpdates = (timefrom && timesrc >= 0);
                 status = decodeStructure(decoder, reason, deferUpdates ? &pending : nullptr);
                 if (OpcUa_IsGood(status)) {
-                    for (const auto &u : pending) {
+                    for (auto &u : pending) {
                         if (u.missingIndex >= 0)
                             u.owner->setMissingMember(u.pelem, u.missingIndex);
                         else
-                            u.pelem->setIncomingData(u.value, u.reason);
+                            u.pelem->takeIncomingData(u.value, u.reason);
                     }
                 }
                 decoder.clear();
@@ -544,14 +544,18 @@ DataElementUaSdkNode::skipStructure (UaBinaryDecoder &decoder, const UaStructure
 
 void
 DataElementUaSdkNode::deliver (const std::shared_ptr<DataElementUaSdk> &pelem,
-                               const UaVariant &value,
+                               UaVariant &value,
                                ProcessReason reason,
                                UpdateSink *deferred)
 {
-    if (deferred)
-        deferred->push_back({pelem, value, reason, this, -1});
-    else
-        pelem->setIncomingData(value, reason);
+    if (deferred) {
+        deferred->push_back({pelem, UaVariant(), reason, this, -1});
+        // Move the data into the pending update (no deep copy)
+        deferred->back().value.attach(value);
+        value.detach();
+    } else {
+        pelem->takeIncomingData(value, reason);
+    }
 }
 
 void

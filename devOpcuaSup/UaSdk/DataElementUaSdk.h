@@ -114,6 +114,17 @@ public:
         = 0;
 
     /**
+     * @brief Push an incoming data value into the DataElement, taking over the value.
+     *
+     * Same as setIncomingData(), but the element may take over the data of the
+     * value (instead of copying it), leaving the value empty.
+     *
+     * @param value  new value for this data element (empty after the call)
+     * @param reason  reason for this value update
+     */
+    virtual void takeIncomingData(UaVariant &value, ProcessReason reason) { setIncomingData(value, reason); }
+
+    /**
      * @brief Push an incoming event into the DataElement.
      *
      * Called from the OPC UA client worker thread when an out-of-band

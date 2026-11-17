@@ -59,13 +59,13 @@ public:
         if (wasFirst) *wasFirst = false;
         if (updq.size() < maxElements) {
             if (wasFirst && updq.empty()) *wasFirst = true;
-            updq.push(update);
+            updq.push(std::move(update));
         } else {
             if (discardOldest) {
                 std::shared_ptr<T> drop = updq.front();
                 updq.pop();
                 updq.front()->override(drop->getOverrides());
-                updq.push(update);
+                updq.push(std::move(update));
             } else {
                 updq.back()->override(*update);
             }
