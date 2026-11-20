@@ -116,6 +116,7 @@ private:
     UaStructureDefinition definition; /**< cache of structure definition */
     std::vector<UaStructureField> fields;                         /**< cache of the definition's members */
     std::vector<bool> nestedStructure;                             /**< member is a (scalar, non-union) structure */
+    std::vector<OpcUa_BuiltInType> simpleType; /**< type of a member that is read directly (or OpcUaType_Null) */
     std::vector<std::weak_ptr<DataElementUaSdk>> memberElements; /**< child element per member (if any) */
     int timesrc;
     bool mapped;
