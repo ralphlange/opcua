@@ -25,6 +25,7 @@
 #include <uaextensionobject.h>
 #include <uagenericoptionsetvalue.h>
 #include <uagenericunionvalue.h>
+#include <uaoptionsetdefinition.h>
 #include <uastructurefielddata.h>
 
 #include <alarm.h>
@@ -126,6 +127,81 @@ isNestedStructure (const UaStructureField &field)
         return false;
     const UaStructureDefinition def = field.structureDefinition();
     return !def.isNull() && !def.isUnion();
+}
+
+// Member of a simple type (scalar, no option set) that can be read directly
+// (decoded and stored in the variant as UaAbstractGenericValue::readField() does it)
+OpcUa_BuiltInType
+simpleFieldType (const UaStructureField &field)
+{
+    if (field.arrayType() != UaStructureField::ArrayType_Scalar || !field.optionSetDefinition().isNull())
+        return OpcUaType_Null;
+    switch (field.valueType()) {
+    case OpcUaType_Boolean:
+    case OpcUaType_SByte:
+    case OpcUaType_Byte:
+    case OpcUaType_Int16:
+    case OpcUaType_UInt16:
+    case OpcUaType_Int32:
+    case OpcUaType_UInt32:
+    case OpcUaType_Int64:
+    case OpcUaType_UInt64:
+    case OpcUaType_Float:
+    case OpcUaType_Double:
+    case OpcUaType_DateTime:
+        return field.valueType();
+    default:
+        return OpcUaType_Null;
+    }
+}
+
+// Read a member of a simple type (see simpleFieldType()),
+// avoiding the UaStructureFieldData object and copy of readField()
+OpcUa_StatusCode
+readSimpleField (UaBinaryDecoder &decoder, OpcUa_BuiltInType type, UaVariant &value)
+{
+    static const UaString noName; // field names are not used by the binary decoder
+    OpcUa_StatusCode status = OpcUa_BadInternalError;
+
+#define READ_SIMPLE_FIELD(T)                    \
+    case OpcUaType_##T: {                       \
+        OpcUa_##T v;                            \
+        status = decoder.read##T(noName, v);    \
+        if (OpcUa_IsGood(status))               \
+            value.set##T(v);                    \
+        break;                                  \
+    }
+
+    switch (type) {
+    case OpcUaType_Boolean: {
+        OpcUa_Boolean v;
+        status = decoder.readBoolean(noName, v);
+        if (OpcUa_IsGood(status))
+            value.setBool(v);
+        break;
+    }
+    READ_SIMPLE_FIELD(SByte)
+    READ_SIMPLE_FIELD(Byte)
+    READ_SIMPLE_FIELD(Int16)
+    READ_SIMPLE_FIELD(UInt16)
+    READ_SIMPLE_FIELD(Int32)
+    READ_SIMPLE_FIELD(UInt32)
+    READ_SIMPLE_FIELD(Int64)
+    READ_SIMPLE_FIELD(UInt64)
+    READ_SIMPLE_FIELD(Float)
+    READ_SIMPLE_FIELD(Double)
+    case OpcUaType_DateTime: {
+        UaDateTime v;
+        status = decoder.readDateTime(noName, v);
+        if (OpcUa_IsGood(status))
+            value.setDateTime(v);
+        break;
+    }
+    default:
+        break;
+    }
+#undef READ_SIMPLE_FIELD
+    return status;
 }
 
 // Field data as variant (as UaGenericStructureValue::value() does it)
@@ -232,10 +308,12 @@ DataElementUaSdkNode::createMap (const std::string *timefrom)
     }
     fields.resize(noOfMembers);
     nestedStructure.resize(noOfMembers);
+    simpleType.resize(noOfMembers);
     memberElements.assign(noOfMembers, std::weak_ptr<DataElementUaSdk>());
     for (int i = 0; i < noOfMembers; i++) {
         fields[i] = definition.child(i);
         nestedStructure[i] = isNestedStructure(fields[i]);
+        simpleType[i] = simpleFieldType(fields[i]);
     }
     for (const auto &it : elements) {
         auto pelem = it.lock();
@@ -465,18 +543,29 @@ DataElementUaSdkNode::decodeStructure (UaBinaryDecoder &decoder, ProcessReason r
             // A leaf connected to a structure member gets the structure (as ExtensionObject)
         }
 
-        const UaStructureFieldData data = readField(fieldReader(), &decoder, field, status, 0);
-        if (OpcUa_IsBad(status))
-            break;
+        UaVariant memberValue;
+        OpcUa_StatusCode valueStatus;
+        if (simpleType[i] != OpcUaType_Null) {
+            status = readSimpleField(decoder, simpleType[i], memberValue);
+            if (OpcUa_IsBad(status))
+                break;
+            valueStatus = OpcUa_IsGood(status) ? OpcUa_Good : OpcUa_BadNoData;
+        } else {
+            const UaStructureFieldData data = readField(fieldReader(), &decoder, field, status, 0);
+            if (OpcUa_IsBad(status))
+                break;
+            if (!pelem && i != timesrc)
+                continue;
+            valueStatus = data.isEmpty() ? OpcUa_BadNoData : fieldDataToVariant(data, memberValue);
+        }
         if (!pelem && i != timesrc)
             continue;
-        if (field.isOptional() && data.isEmpty()) {
-            if (pelem)
+        if (valueStatus == OpcUa_BadNoData) {
+            if (pelem && field.isOptional())
                 deliverMissing(pelem, i, deferred);
             continue;
         }
-        UaVariant memberValue;
-        if (fieldDataToVariant(data, memberValue) != OpcUa_Good)
+        if (valueStatus != OpcUa_Good)
             continue;
         if (i == timesrc)
             pitem->tsData = epicsTimeFromUaVariant(memberValue);
@@ -532,10 +621,15 @@ DataElementUaSdkNode::skipStructure (UaBinaryDecoder &decoder, const UaStructure
             if (!present)
                 continue;
         }
-        if (isNestedStructure(field))
+        const OpcUa_BuiltInType type = simpleFieldType(field);
+        if (type != OpcUaType_Null) {
+            UaVariant discard;
+            status = readSimpleField(decoder, type, discard);
+        } else if (isNestedStructure(field)) {
             status = skipStructure(decoder, field.structureDefinition());
-        else
+        } else {
             readField(fieldReader(), &decoder, field, status, 0);
+        }
     }
 
     decrementNestingDepth(decoder, 0);
@@ -620,6 +714,7 @@ DataElementUaSdkNode::setState (const ConnectionStatus state)
         timesrc = -1;
         fields.clear();
         nestedStructure.clear();
+        simpleType.clear();
         memberElements.clear();
     }
 }

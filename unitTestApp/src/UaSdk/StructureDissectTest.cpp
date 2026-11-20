@@ -387,4 +387,90 @@ TEST_F(StructureDissectMixedTest, WriteNestedMember)
     EXPECT_EQ(4.5, dbl);
 }
 
+// Members of all types that are decoded directly (not through the SDK's generic value)
+class StructureDissectSimpleTypesTest : public StructureDissectMixedTest
+{
+protected:
+    void
+    SetUp() override
+    {
+        NestedStructureFixture::SetUp();
+        UaStructureDefinition simple = definition("Simple", 7010);
+        for (const auto &t : types)
+            simple.addChild(field(t.name, t.type));
+        defs = {simple};
+
+        UaGenericStructureValue value(simple);
+        for (int i = 0; i < static_cast<int>(types.size()); i++) {
+            UaVariant v;
+            v.setDouble(expectedRead(i));
+            EXPECT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), v.changeType(types[i].type, OpcUa_False))
+                << "member " << types[i].name;
+            EXPECT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), value.setField(i, v)) << "member " << types[i].name;
+        }
+        setDataValue(value);
+    }
+
+    static double expectedRead(int i) { return (types[i].type == OpcUaType_Boolean) ? 1.0 : 10.0 + i; }
+
+    struct SimpleType
+    {
+        const char *name;
+        OpcUa_BuiltInType type;
+    };
+    static const std::vector<SimpleType> types;
+};
+
+const std::vector<StructureDissectSimpleTypesTest::SimpleType> StructureDissectSimpleTypesTest::types = {
+    {"bool", OpcUaType_Boolean},
+    {"sbyte", OpcUaType_SByte},
+    {"byte", OpcUaType_Byte},
+    {"int16", OpcUaType_Int16},
+    {"uint16", OpcUaType_UInt16},
+    {"int32", OpcUaType_Int32},
+    {"uint32", OpcUaType_UInt32},
+    {"int64", OpcUaType_Int64},
+    {"uint64", OpcUaType_UInt64},
+    {"float", OpcUaType_Float},
+    {"double", OpcUaType_Double},
+};
+
+TEST_F(StructureDissectSimpleTypesTest, ReadAndWriteSimpleTypes)
+{
+    std::vector<std::list<std::string>> paths;
+    for (const auto &t : types)
+        paths.push_back({t.name});
+    buildPaths("dissectSimple", paths);
+    update();
+    waitForCallbacks();
+
+    for (size_t i = 0; i < types.size(); i++) {
+        epicsFloat64 val = -1.0;
+        EXPECT_EQ(0, connectors[i]->readScalar(&val)) << "member " << types[i].name;
+        EXPECT_EQ(expectedRead(static_cast<int>(i)), val) << "member " << types[i].name;
+    }
+
+    // Writing back keeps the OPC UA type of every member (taken from the incoming value)
+    for (size_t i = 0; i < types.size(); i++)
+        ASSERT_EQ(0, connectors[i]->writeScalar(static_cast<epicsFloat64>(types[i].type == OpcUaType_Boolean ? 0 : 7)))
+            << "member " << types[i].name;
+
+    _OpcUa_WriteValue wv;
+    OpcUa_WriteValue_Initialize(&wv);
+    item->copyAndClearOutgoingData(wv);
+    UaVariant out(wv.Value.Value);
+    OpcUa_WriteValue_Clear(&wv);
+
+    UaExtensionObject eo;
+    ASSERT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), out.toExtensionObject(eo));
+    UaGenericStructureValue root(eo, defs[0]);
+    for (size_t i = 0; i < types.size(); i++) {
+        const UaVariant v = root.value(static_cast<int>(i));
+        EXPECT_EQ(types[i].type, v.type()) << "member " << types[i].name;
+        OpcUa_Double dbl = -1.0;
+        EXPECT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), v.toDouble(dbl)) << "member " << types[i].name;
+        EXPECT_EQ(types[i].type == OpcUaType_Boolean ? 0.0 : 7.0, dbl) << "member " << types[i].name;
+    }
+}
+
 } // namespace
