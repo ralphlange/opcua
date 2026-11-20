@@ -741,12 +741,16 @@ DataElementUaSdkNode::buildOutgoingData (const UaVariant &current)
         if (extensionObject.encoding() == UaExtensionObject::EncodeableObject)
             extensionObject.changeEncoding(UaExtensionObject::Binary);
 
-        UaStructureDefinition definition = pitem->structureDefinition(extensionObject.encodingTypeId());
+        // Use the definition cached by the incoming data path (no type catalog query for every write);
+        // the cache is only read here, it is set and cleared by the client thread
+        UaStructureDefinition definition = this->definition;
+        if (definition.isNull())
+            definition = pitem->structureDefinition(extensionObject.encodingTypeId());
         if (definition.isNull()) {
-            errlogPrintf("Cannot get a structure definition for extensionObject with dataTypeID %s "
-                         "/ encodingTypeID %s - "
-                         "check access to type "
-                         "dictionary\n",
+            errlogPrintf("Cannot get a structure definition for item %s element %s (dataTypeId %s "
+                         "encodingTypeId %s) - no access to type dictionary?\n",
+                         pitem->nodeid->toString().toUtf8(),
+                         name.c_str(),
                          extensionObject.dataTypeId().toString().toUtf8(),
                          extensionObject.encodingTypeId().toString().toUtf8());
             return outgoingData;
