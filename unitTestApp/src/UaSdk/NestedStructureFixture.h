@@ -332,7 +332,7 @@ protected:
         callbacksRunning = true;
         fence.reset(new CallbackFence);
 
-        SessionUaSdk *session = new SessionUaSdk(sessionName, "opc.tcp://localhost:4840");
+        session = new SessionUaSdk(sessionName, "opc.tcp://localhost:4840");
         stub = new StubUaSession;
         for (const auto &def : defs)
             stub->addDefinition(def);
@@ -426,6 +426,7 @@ protected:
     UaDateTime tsValue;               /**< value of the "ts" member */
     std::string timestampElement;     /**< data timestamp element of the item (empty: server timestamp) */
     OpcUa_DataValue dv;
+    SessionUaSdk *session = nullptr;
     StubUaSession *stub = nullptr;
     ItemUaSdk *item = nullptr;
     std::vector<std::unique_ptr<dbCommon, decltype(&std::free)>> records;

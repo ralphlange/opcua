@@ -18,10 +18,12 @@
 #include "devOpcua.h"
 
 #include <errlog.h>
+#include <epicsTime.h>
 
 #include <open62541/client_subscriptions.h>
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <map>
 #include <algorithm>
@@ -63,6 +65,8 @@ void SubscriptionOpen62541::setOption(const std::string &name, const std::string
     if (name == "debug") {
         unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
         debug = ul;
+    } else if (name == "resetstats") {
+        stats.reset();
     } else if (name == "priority") {
         unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
         if (ul > 255ul)
@@ -111,8 +115,10 @@ SubscriptionOpen62541::show (int level) const
               << " enable="    "?" // << (puasubscription ? (puasubscription->publishingEnabled() ? "y" : "n") : "?")
               << "(" << (enable ? "Y" : "N") << ")"
               << " debug=" << debug
-              << " items=" << items.size()
-              << std::endl;
+              << " items=" << items.size();
+    if (level >= 1)
+        stats.show(std::cout);
+    std::cout << std::endl;
 
     if (level >= 1) {
         for (auto &it : items) {
@@ -275,7 +281,17 @@ SubscriptionOpen62541::dataChange (UA_UInt32 monitorId, ItemOpen62541 &item, UA_
             std::cout << "/" << item.linkinfo.identifierString;
         std::cout << " = " << value->value << std::endl;
     }
+    const epicsUInt64 start = DataChangeStats::now();
+
     item.setIncomingData(*value, ProcessReason::incomingData);
+
+    // The client library calls this once per item (not once per publish response)
+    const epicsUInt64 durationNs = DataChangeStats::now() - start;
+    stats.record(durationNs, 1, subscriptionSettings.revisedPublishingInterval, durationNs, [&item]() {
+        std::ostringstream os;
+        os << item.getNodeId();
+        return os.str();
+    });
 }
 
 } // namespace DevOpcua

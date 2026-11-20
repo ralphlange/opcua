@@ -28,6 +28,7 @@
 #include <uavariant.h>
 
 #include "NestedStructureFixture.h"
+#include "SubscriptionUaSdk.h"
 
 namespace {
 
@@ -142,6 +143,40 @@ TEST_F(StructureDissectTest, TimestampMemberWrongType)
     useTimestampElement("m0");
     build("dissectTsWrongType");
     expectRecordTimes(ItemUaSdk::uaToEpicsTime(UaDateTime(dv.SourceTimestamp), 0));
+}
+
+TEST_F(StructureDissectTest, DataChangeCallbackStatistics)
+{
+    build("dissectStats");
+    // Subscription without a server: data changes are pushed directly into the callback
+    // (intentionally not deleted, as the tree, item and session)
+    SubscriptionUaSdk *sub = new SubscriptionUaSdk("dissectStatsSub", session, 100.0);
+    sub->addItemUaSdk(item);
+
+    UaDataNotifications notifications;
+    notifications.create(1);
+    notifications[0].ClientHandle = 0;
+    OpcUa_DataValue_CopyTo(&dv, &notifications[0].Value);
+    UaDiagnosticInfos diagnostics;
+    for (int i = 0; i < 2; i++) {
+        sub->dataChange(0, notifications, diagnostics);
+        waitForCallbacks();
+        ASSERT_EQ(0u, drainAndCheck()) << "leafs with missing or wrong data after callback " << i;
+    }
+
+    auto shown = [&]() {
+        testing::internal::CaptureStdout();
+        sub->show(1);
+        return testing::internal::GetCapturedStdout();
+    };
+    std::string out = shown();
+    EXPECT_NE(std::string::npos, out.find(" items=1 callbacks=2 notifications=2 avgMs=")) << out;
+    EXPECT_NE(std::string::npos, out.find(std::string("(") + item->getNodeId().toXmlString().toUtf8() + ")\n"))
+        << out;
+
+    sub->setOption("resetstats", "1");
+    out = shown();
+    EXPECT_NE(std::string::npos, out.find(" items=1 callbacks=0 notifications=0 avgMs=0.000 maxMs=0.000 lastMs=0.000 overInterval=0\n")) << out;
 }
 
 TEST_F(StructureDissectTest, ReadPartiallyConnectedStructure)

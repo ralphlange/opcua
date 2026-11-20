@@ -54,6 +54,10 @@ GTESTPROD_HOST += RequestQueueBatcherTest
 RequestQueueBatcherTest_SRCS += RequestQueueBatcherTest.cpp
 GTESTS += RequestQueueBatcherTest
 
+GTESTPROD_HOST += DataChangeStatsTest
+DataChangeStatsTest_SRCS += DataChangeStatsTest.cpp
+GTESTS += DataChangeStatsTest
+
 GTESTPROD_HOST += RegistryTest
 RegistryTest_SRCS += RegistryTest.cpp
 GTESTS += RegistryTest
