@@ -101,9 +101,11 @@ TEST_F(StructureDissectTest, WriteNestedStructureMember)
 
     _OpcUa_WriteValue wv;
     OpcUa_WriteValue_Initialize(&wv);
+    const unsigned int lookupsBefore = stub->lookups;
     item->copyAndClearOutgoingData(wv);
     UaVariant out(wv.Value.Value);
     OpcUa_WriteValue_Clear(&wv);
+    EXPECT_EQ(lookupsBefore, stub->lookups) << "structure definition queries when writing";
 
     UaExtensionObject eo;
     ASSERT_EQ(static_cast<OpcUa_StatusCode>(OpcUa_Good), out.toExtensionObject(eo));
