@@ -13,6 +13,7 @@
 #ifndef DEVOPCUA_SUBSCRIPTIONOPEN62541_H
 #define DEVOPCUA_SUBSCRIPTIONOPEN62541_H
 
+#include "DataChangeStats.h"
 #include "OpcuaRegistry.h"
 #include "Subscription.h"
 
@@ -186,6 +187,7 @@ private:
     UA_CreateSubscriptionResponse subscriptionSettings;   /**< subscription specific settings */
     UA_CreateSubscriptionRequest requestedSettings;       /**< requested subscription specific settings */
     bool enable;                                          /**< subscription enable flag */
+    DataChangeStats stats;                                /**< data change callback timing */
 };
 
 } // namespace DevOpcua

@@ -193,6 +193,8 @@ session=OPC1 options:
   - Verbosity level of debugging [default: 0 = off]
 * - `priority`
   - Priority of the subscription [0..255; default: 0 = lowest]
+* - `resetstats`
+  - Resets the data change callback statistics (any value)
 :::
 
 ## OPC UA Security Management
@@ -275,3 +277,23 @@ opcuaShow <pattern>, [<verbosity>]
   Session or Subscription name glob pattern.
 * `verbosity`:
   Sets amount of printed information.
+
+For subscriptions, verbosity 1 and above adds timing statistics
+of the data change callbacks to the subscription's line,
+i.e., the time spent pushing the data of the items
+into the data elements and records, in the client library's callback thread:
+
+```
+subscription=SUB session=SESS interval=100(100) prio=0(0) enable=y(Y) debug=0 items=1 callbacks=3 notifications=6 avgMs=102.000 maxMs=300.000 lastMs=4.000 overInterval=1 slowestItemMs=300.000(ns=2;s=item)
+```
+
+* `callbacks`, `notifications`: number of callbacks and of data notifications (items) in them
+* `avgMs`, `maxMs`, `lastMs`: average, maximum and latest duration of a callback [ms]
+* `overInterval`: number of callbacks that took longer than the publishing interval
+* `slowestItemMs`: longest time for a single item [ms], with that item's node id in brackets
+  (shown once an item has been received)
+
+Reset the statistics with `opcuaOptions <subscription> resetstats=1`.
+
+The client libraries call back differently: the UA SDK once for all items of a
+publish response, open62541 once per item (callbacks and notifications are equal).

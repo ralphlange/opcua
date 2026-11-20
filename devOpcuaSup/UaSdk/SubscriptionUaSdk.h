@@ -27,6 +27,7 @@
 
 #include "OpcuaRegistry.h"
 #include "SessionUaSdk.h"
+#include "DataChangeStats.h"
 #include "Subscription.h"
 
 namespace DevOpcua {
@@ -195,6 +196,7 @@ private:
     SubscriptionSettings subscriptionSettings;  /**< subscription specific settings */
     SubscriptionSettings requestedSettings;     /**< requested subscription specific settings */
     bool enable;                                /**< subscription enable flag */
+    DataChangeStats stats;                      /**< data change callback timing */
 };
 
 } // namespace DevOpcua

@@ -28,6 +28,7 @@
 #include <errlog.h>
 #include <epicsThread.h>
 #include <epicsEvent.h>
+#include <epicsTime.h>
 
 #define epicsExportSharedSymbols
 #include "DataElementUaSdk.h"
@@ -68,6 +69,8 @@ void SubscriptionUaSdk::setOption(const std::string &name, const std::string &va
     if (name == "debug") {
         unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
         debug = ul;
+    } else if (name == "resetstats") {
+        stats.reset();
     } else if (name == "priority") {
         unsigned long ul = std::strtoul(value.c_str(), nullptr, 0);
         if (ul > 255ul)
@@ -125,8 +128,10 @@ SubscriptionUaSdk::show (int level) const
               << " enable=" << (puasubscription ? (puasubscription->publishingEnabled() ? "y" : "n") : "?")
               << "(" << (enable ? "Y" : "N") << ")"
               << " debug=" << debug
-              << " items=" << items.size()
-              << std::endl;
+              << " items=" << items.size();
+    if (level >= 1)
+        stats.show(std::cout);
+    std::cout << std::endl;
 
     if (level >= 1) {
         for (auto &it : items) {
@@ -301,6 +306,10 @@ SubscriptionUaSdk::dataChange (OpcUa_UInt32 clientSubscriptionHandle,
                                const UaDiagnosticInfos&   diagnosticInfos)
 {
     OpcUa_UInt32 i;
+    const epicsUInt64 start = DataChangeStats::now();
+    epicsUInt64 itemStart = start;
+    epicsUInt64 maxItemNs = 0;
+    ItemUaSdk *maxItem = nullptr;
 
     if (debug)
         std::cout << "Subscription " << name.c_str()
@@ -320,7 +329,21 @@ SubscriptionUaSdk::dataChange (OpcUa_UInt32 clientSubscriptionHandle,
             std::cout << ")" << std::endl;
         }
         item->setIncomingData(dataNotifications[i].Value, ProcessReason::incomingData);
+
+        const epicsUInt64 itemEnd = DataChangeStats::now();
+        if (itemEnd - itemStart > maxItemNs) {
+            maxItemNs = itemEnd - itemStart;
+            maxItem = item;
+        }
+        itemStart = itemEnd;
     }
+
+    // publishingInterval has been revised by createSubscription()
+    stats.record(DataChangeStats::now() - start,
+                 dataNotifications.length(),
+                 subscriptionSettings.publishingInterval,
+                 maxItemNs,
+                 [maxItem]() { return std::string(maxItem->getNodeId().toXmlString().toUtf8()); });
 }
 
 void
