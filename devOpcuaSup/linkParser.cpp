@@ -232,6 +232,8 @@ parseLink (dbCommon *prec, const DBEntry &ent)
                                      << name << "' was not initialized correctly");
         }
         pinfo->item = pconnector->pitem;
+        // Element records inherit item settings that they can override
+        pinfo->updateOnChange = pinfo->item->linkinfo.updateOnChange;
         sep = linkstr.find_first_not_of("; \t", send);
         dbFinishEntry(&entry);
     } else {
@@ -317,6 +319,13 @@ parseLink (dbCommon *prec, const DBEntry &ent)
             } else {
                 throw std::runtime_error(SB() << "no value for option '" << optname << "'");
             }
+        } else if (optname == "update") {
+            if (optval == "chg" || optval == "change")
+                pinfo->updateOnChange = true;
+            else if (optval == "alw" || optval == "always")
+                pinfo->updateOnChange = false;
+            else
+                throw std::runtime_error(SB() << "illegal value '" << optval << "' for option '" << optname << "'");
         } else if (optname == "element") {
             pinfo->element = optval;
             pinfo->elementPath = splitString(optval);
@@ -368,6 +377,7 @@ parseLink (dbCommon *prec, const DBEntry &ent)
             std::cout << "(@" << pinfo->timestampElement << ")";
         std::cout << " output=" << (pinfo->isOutput ? "y" : "n")
                   << " monitor=" << (pinfo->monitor ? "y" : "n")
+                  << " update=" << (pinfo->updateOnChange ? "chg" : "alw")
                   << " bini=" << linkOptionBiniString(pinfo->bini)
                   << std::endl;
     }

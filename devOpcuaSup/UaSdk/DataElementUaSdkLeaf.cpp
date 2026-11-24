@@ -90,7 +90,10 @@ DataElementUaSdkLeaf::show(const int, const unsigned int indent) const
     if (pconnector->plinkinfo->timestamp == LinkOptionTimestamp::data)
         std::cout << "@" << pitem->linkinfo.timestampElement;
     std::cout << " bini=" << linkOptionBiniString(pconnector->plinkinfo->bini)
-              << " monitor=" << (pconnector->plinkinfo->monitor ? "y" : "n") << "\n";
+              << " monitor=" << (pconnector->plinkinfo->monitor ? "y" : "n");
+    if (parent) // update option only applies to structure members
+        std::cout << " update=" << (pconnector->plinkinfo->updateOnChange ? "chg" : "alw");
+    std::cout << "\n";
 }
 
 void
@@ -105,7 +108,7 @@ DataElementUaSdkLeaf::setIncomingData (const UaVariant &value,
         delete enumChoices;
         enumChoices = pitem->session->getEnumChoices(typeId);
     }
-    if (acceptsIncomingData(reason)) {
+    if (acceptsIncomingData(reason) && !skipUnchanged(value, reason)) {
         // Make a copy of the value for this element and put it on the queue
         pushIncomingUpdate(
             std::make_shared<UpdateUaSdk>(getIncomingTimeStamp(), reason, value, getIncomingReadStatus()),
@@ -118,7 +121,7 @@ DataElementUaSdkLeaf::takeIncomingData (UaVariant &value, ProcessReason reason)
 {
     incomingData = value;
 
-    if (acceptsIncomingData(reason)) {
+    if (acceptsIncomingData(reason) && !skipUnchanged(value, reason)) {
         // Move the data of the value into the update (no deep copy)
         std::unique_ptr<UaVariant> data(new UaVariant);
         data->attach(value);
@@ -138,6 +141,35 @@ DataElementUaSdkLeaf::acceptsIncomingData (ProcessReason reason) const
            || state == ConnectionStatus::up;
 }
 
+bool
+DataElementUaSdkLeaf::skipUnchanged (const UaVariant &value, ProcessReason reason)
+{
+    // Only structure members are filtered: for a non-structure item (the leaf is the root element),
+    // the monitor only sends data when value or status have changed.
+    if (!parent)
+        return false;
+    // Only data updates from the monitored item are filtered and remembered.
+    // Other data (e.g. explicit reads) is always passed and invalidates the last value,
+    // so that the next monitor update is passed, too.
+    if (reason != ProcessReason::incomingData) {
+        lastPushedValid = false;
+        return false;
+    }
+    if (!pconnector->plinkinfo->updateOnChange)
+        return false;
+    const OpcUa_StatusCode status = getIncomingReadStatus();
+    if (lastPushedValid && status == lastPushedStatus && value == lastPushedValue) {
+        if (debug() >= 5)
+            std::cout << "Element " << name << " skipping unchanged data for record "
+                      << pconnector->getRecordName() << std::endl;
+        return true;
+    }
+    lastPushedValue = value;
+    lastPushedStatus = status;
+    lastPushedValid = true;
+    return false;
+}
+
 void
 DataElementUaSdkLeaf::pushIncomingUpdate (std::shared_ptr<UpdateUaSdk> update, ProcessReason reason)
 {
@@ -155,6 +187,7 @@ DataElementUaSdkLeaf::pushIncomingUpdate (std::shared_ptr<UpdateUaSdk> update, P
 void
 DataElementUaSdkLeaf::setIncomingEvent (ProcessReason reason)
 {
+    lastPushedValid = false;
     Guard G(pconnector->lock);
     bool wasFirst = false;
     UpdateUaSdk *u(new UpdateUaSdk(getIncomingTimeStamp(), reason));
@@ -170,6 +203,7 @@ DataElementUaSdkLeaf::setIncomingEvent (ProcessReason reason)
 void
 DataElementUaSdkLeaf::setState(const ConnectionStatus state)
 {
+    lastPushedValid = false;
     Guard G(pconnector->lock);
     pconnector->setState(state);
 }

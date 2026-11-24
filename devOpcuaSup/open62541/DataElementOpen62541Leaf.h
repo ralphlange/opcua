@@ -23,6 +23,7 @@
 #include <alarm.h>
 #include <epicsTypes.h>
 
+#include <atomic>
 #include <string>
 #include <limits>
 #include <cstdlib>
@@ -657,8 +658,22 @@ private:
     virtual void markAsDirty () override
     {
         isdirty = true;
+        lastPushedValid = false; // the record wrote a value: the next incoming update must go through
         pitem->markAsDirty();
     }
+
+    /**
+     * @brief Check if an incoming update can be skipped (link option update=chg of the record).
+     *
+     * Only applies to members of structures (not to the root element of an item)
+     * and to data updates from the monitored item (reason incomingData):
+     * such an update is skipped if value and status are unchanged
+     * since the last monitor update that was queued for the record.
+     * Otherwise, value and status are remembered for the next comparison.
+     * Data with other reasons (e.g. explicit reads) is never skipped and
+     * invalidates the remembered value.
+     */
+    bool skipUnchanged(const UA_Variant &value, ProcessReason reason);
 
     void dbgWriteScalar () const;
     void dbgReadScalar(const UpdateOpen62541 *upd,
@@ -1158,6 +1173,11 @@ private:
     }
 
     UpdateQueue<UpdateOpen62541> incomingQueue;  /**< queue of incoming values */
+
+    // Last update queued for the record (only used with link option update=chg)
+    UA_Variant lastPushedValue;                  /**< value of the last queued update (deep copy) */
+    UA_StatusCode lastPushedStatus = UA_STATUSCODE_GOOD; /**< status of the last queued update */
+    std::atomic<bool> lastPushedValid{false};    /**< last value/status are valid for comparison */
 };
 
 } // namespace DevOpcua

@@ -110,6 +110,7 @@ ItemOpen62541::show (int level) const
               << " qsize=" << revisedQueueSize << "(" << linkinfo.queueSize << ")"
               << " cqsize=" << linkinfo.clientQueueSize
               << " discard=" << (linkinfo.discardOldest ? "old" : "new")
+              << " update=" << (linkinfo.updateOnChange ? "chg" : "alw")
               << " timestamp=" << linkOptionTimestampString(linkinfo.timestamp);
     if (linkinfo.timestamp == LinkOptionTimestamp::data)
         std::cout << "@" << linkinfo.timestampElement;

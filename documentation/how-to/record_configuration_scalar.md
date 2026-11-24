@@ -47,6 +47,13 @@ for accessing individual single scalar variables on the OPC UA server.
 * - `register`
   - `n`
   - Register item with server for performance [`y`/`n`]
+* - `update`
+  - `change`
+  - Ignored for single scalar variables:
+    the OPC UA monitor only sends data when the value (or status) has changed,
+    so `update=always` makes no difference.
+    Only applies to elements of structures, see
+    [Updating Only Changed Elements](#updating-only-changed-elements)
 * - `deadband`
   - `0.0`
   - Deadband filter for subscriptions [double; 0.0 = no deadband]
