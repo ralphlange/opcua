@@ -347,6 +347,8 @@ protected:
         iinfo.samplingInterval = 0.0;
         iinfo.queueSize = 1;
         iinfo.clientQueueSize = 3;
+        if (itemUpdate != UpdateOption::notSet)
+            iinfo.updateOnChange = (itemUpdate == UpdateOption::change);
         if (!timestampElement.empty()) {
             iinfo.timestamp = LinkOptionTimestamp::data;
             iinfo.timestampElement = timestampElement;
@@ -386,11 +388,33 @@ protected:
         item->setState(ConnectionStatus::up);
     }
 
+    // Session, item with a scalar (double) value and one record connected to it (no element path)
+    void
+    buildScalar(const std::string &sessionName)
+    {
+        expected.assign(1, 0.0);
+        buildPaths(sessionName, {std::list<std::string>()});
+    }
+
+    // Incoming data value for a scalar item
+    void
+    setScalarValue(double value)
+    {
+        UaVariant var;
+        var.setDouble(value);
+        OpcUa_DataValue_Clear(&dv);
+        OpcUa_DataValue_Initialize(&dv);
+        var.copyTo(&dv.Value);
+        dv.StatusCode = OpcUa_Good;
+        dv.SourceTimestamp = UaDateTime::now();
+        dv.ServerTimestamp = dv.SourceTimestamp;
+    }
+
     // Push the incoming data value into the item (the measured operation)
     void
-    update()
+    update(ProcessReason reason = ProcessReason::incomingData)
     {
-        item->setIncomingData(dv, ProcessReason::incomingData);
+        item->setIncomingData(dv, reason);
     }
 
     // Wait for all requested record processing callbacks to have run
@@ -425,6 +449,8 @@ protected:
     bool withTimestampMember = false; /**< add DateTime member "ts" to the outermost structure */
     UaDateTime tsValue;               /**< value of the "ts" member */
     std::string timestampElement;     /**< data timestamp element of the item (empty: server timestamp) */
+    enum class UpdateOption { notSet, always, change };
+    UpdateOption itemUpdate = UpdateOption::always; /**< item option update (notSet: default from linkInfo) */
     OpcUa_DataValue dv;
     SessionUaSdk *session = nullptr;
     StubUaSession *stub = nullptr;

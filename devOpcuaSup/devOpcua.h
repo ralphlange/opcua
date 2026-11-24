@@ -102,6 +102,8 @@ typedef struct linkInfo {
     epicsUInt32 clientQueueSize;
     bool discardOldest = true;
     double deadband = 0;
+    bool updateOnChange = true;        /**< push only changed values (and status) of monitor updates
+                                            to the record (element records: default from the item) */
 
     std::string element;
     std::list<std::string> elementPath;

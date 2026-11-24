@@ -108,6 +108,7 @@ ItemUaSdk::show (int level) const
               << " sampling=" << revisedSamplingInterval << "(" << linkinfo.samplingInterval << ")"
               << " deadband=" << linkinfo.deadband << " qsize=" << revisedQueueSize << "(" << linkinfo.queueSize << ")"
               << " cqsize=" << linkinfo.clientQueueSize << " discard=" << (linkinfo.discardOldest ? "old" : "new")
+              << " update=" << (linkinfo.updateOnChange ? "chg" : "alw")
               << " timestamp=" << linkOptionTimestampString(linkinfo.timestamp);
     if (linkinfo.timestamp == LinkOptionTimestamp::data)
         std::cout << "@" << linkinfo.timestampElement;

@@ -36,11 +36,13 @@ DataElementOpen62541Leaf::DataElementOpen62541Leaf (const std::string &name,
 {
     UA_Variant_init(&incomingData);
     UA_Variant_init(&outgoingData);
+    UA_Variant_init(&lastPushedValue);
     item->dataTreeNoOfLeafs++;
 }
 
 DataElementOpen62541Leaf::~DataElementOpen62541Leaf()
 {
+    UA_Variant_clear(&lastPushedValue);
     delete enumChoices;
     pitem->dataTreeNoOfLeafs--;
 }
@@ -80,7 +82,10 @@ DataElementOpen62541Leaf::show (const int level, const unsigned int indent) cons
               << " type=" << variantTypeString(incomingData)
               << " timestamp=" << linkOptionTimestampString(pconnector->plinkinfo->timestamp)
               << " bini=" << linkOptionBiniString(pconnector->plinkinfo->bini)
-              << " monitor=" << (pconnector->plinkinfo->monitor ? "y" : "n") << "\n";
+              << " monitor=" << (pconnector->plinkinfo->monitor ? "y" : "n");
+    if (parent) // update option only applies to structure members
+        std::cout << " update=" << (pconnector->plinkinfo->updateOnChange ? "chg" : "alw");
+    std::cout << "\n";
 }
 
 #ifndef UA_ENABLE_TYPEDESCRIPTION
@@ -116,9 +121,10 @@ DataElementOpen62541Leaf::setIncomingData (const UA_Variant &value, ProcessReaso
     if (pconnector->state() == ConnectionStatus::initialRead && typeKindOf(value) == UA_DATATYPEKIND_ENUM) {
         enumChoices = pitem->session->getEnumChoices(&value.type->typeId);
     }
-    if ((pconnector->state() == ConnectionStatus::initialRead
-         && (reason == ProcessReason::readComplete || reason == ProcessReason::readFailure))
-        || (pconnector->state() == ConnectionStatus::up)) {
+    if (((pconnector->state() == ConnectionStatus::initialRead
+          && (reason == ProcessReason::readComplete || reason == ProcessReason::readFailure))
+         || (pconnector->state() == ConnectionStatus::up))
+        && !skipUnchanged(value, reason)) {
         Guard G(pconnector->lock);
         bool wasFirst = false;
         // Make a copy of the value for this element and put it on the queue
@@ -136,9 +142,51 @@ DataElementOpen62541Leaf::setIncomingData (const UA_Variant &value, ProcessReaso
     }
 }
 
+bool
+DataElementOpen62541Leaf::skipUnchanged (const UA_Variant &value, ProcessReason reason)
+{
+    // Only structure members are filtered: for a non-structure item (the leaf is the root element),
+    // the monitor only sends data when value or status have changed.
+    if (!parent)
+        return false;
+    // Only data updates from the monitored item are filtered and remembered.
+    // Other data (e.g. explicit reads) is always passed and invalidates the last value,
+    // so that the next monitor update is passed, too.
+    if (reason != ProcessReason::incomingData) {
+        lastPushedValid = false;
+        return false;
+    }
+    if (!pconnector->plinkinfo->updateOnChange)
+        return false;
+#if UA_OPEN62541_VER_MAJOR * 100 + UA_OPEN62541_VER_MINOR < 103
+    // Comparing values needs UA_order() (open62541 >= 1.3): pass all updates
+    (void) value;
+    return false;
+#else
+    const UA_StatusCode status = getIncomingReadStatus();
+    if (lastPushedValid && status == lastPushedStatus
+        && UA_order(&value, &lastPushedValue, &UA_TYPES[UA_TYPES_VARIANT]) == UA_ORDER_EQ) {
+        if (debug() >= 5)
+            std::cout << "Element " << name << " skipping unchanged data for record "
+                      << pconnector->getRecordName() << std::endl;
+        return true;
+    }
+    // The incoming value is a shallow copy of response data: keep a deep copy
+    UA_Variant_clear(&lastPushedValue);
+    if (UA_Variant_copy(&value, &lastPushedValue) != UA_STATUSCODE_GOOD) {
+        lastPushedValid = false;
+        return false;
+    }
+    lastPushedStatus = status;
+    lastPushedValid = true;
+    return false;
+#endif
+}
+
 void
 DataElementOpen62541Leaf::setIncomingEvent (ProcessReason reason)
 {
+    lastPushedValid = false;
     Guard G(pconnector->lock);
     if (reason == ProcessReason::connectionLoss && enumChoices)
         enumChoices = nullptr;
@@ -157,6 +205,7 @@ DataElementOpen62541Leaf::setIncomingEvent (ProcessReason reason)
 void
 DataElementOpen62541Leaf::setState (const ConnectionStatus state)
 {
+    lastPushedValid = false;
     Guard G(pconnector->lock);
     pconnector->setState(state);
 }
