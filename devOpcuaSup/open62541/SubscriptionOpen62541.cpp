@@ -116,8 +116,7 @@ SubscriptionOpen62541::show (int level) const
               << "(" << (enable ? "Y" : "N") << ")"
               << " debug=" << debug
               << " items=" << items.size();
-    if (level >= 1)
-        stats.show(std::cout);
+    stats.show(std::cout);
     std::cout << std::endl;
 
     if (level >= 1) {

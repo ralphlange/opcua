@@ -292,8 +292,8 @@ below the one that the pattern matched:
 On a session, items that are not monitored (not in any subscription)
 are listed below a `subscription=[none]` line.
 
-For subscriptions, verbosity 1 and above adds timing statistics
-of the data change callbacks to the subscription's line,
+The subscription line includes timing statistics
+of the data change callbacks,
 i.e., the time spent pushing the data of the items
 into the data elements and records, in the client library's callback thread:
 

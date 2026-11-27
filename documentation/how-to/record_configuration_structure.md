@@ -284,8 +284,8 @@ for every update of the structure.
 :::
 
 :::{tip}
-`opcuaShow <subscription> 1` shows the timing of the data change callbacks
-(the time spent pushing incoming data into the element records)
-and the item options, including `update`;
-`opcuaShow <subscription> 2` adds the options of the element records.
+`opcuaShow <subscription>` shows the timing of the data change callbacks
+(the time spent pushing incoming data into the element records),
+`opcuaShow <subscription> 1` adds the item options, including `update`,
+and `opcuaShow <subscription> 2` adds the options of the element records.
 :::
