@@ -899,8 +899,8 @@ SessionUaSdk::setupClientSecurityInfo(ClientSecurityInfo &securityInfo,
     UaStatus status
         = securityInfo.initializePkiProviderOpenSSL(securityCertificateRevocationListDir.c_str(),
                                                     securityCertificateTrustListDir.c_str(),
-                                                    securityIssuersCertificatesDir.c_str(),
-                                                    securityIssuersRevocationListDir.c_str());
+                                                    securityIssuersRevocationListDir.c_str(),
+                                                    securityIssuersCertificatesDir.c_str());
     if (status.isBad())
         errlogPrintf("%s%s: setting up PKI context failed with status %s\n",
                      sessionName ? "OPC UA Session " : "OPC UA",
