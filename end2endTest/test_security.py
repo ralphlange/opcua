@@ -11,6 +11,7 @@ The tests are skipped if the module was built without crypto support.
 
 import os
 import re
+import sys
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -104,18 +105,23 @@ class IocSecurity:
     identity: dict[str, str] | None = None  # contents of the sec-id file
 
 
+def posix(path: Path | str) -> str:
+    """Path with forward slashes (iocsh treats backslashes as escapes; fine on Windows)."""
+    return Path(path).as_posix()
+
+
 def write_startup_script(directory: Path, sec: IocSecurity) -> Path:
     lines = [
         'cd "$(OPCUA_TEST_TOP)"',
         'dbLoadDatabase("dbd/opcuaTestIoc.dbd")',
         "opcuaTestIoc_registerRecordDeviceDriver(pdbbase)",
-        f'opcuaSaveRejected("{directory / "rejected"}")',
+        f'opcuaSaveRejected("{posix(directory / "rejected")}")',
     ]
     if sec.pki is not None:
-        lines.append(f'opcuaSetupPKI("{sec.pki}")')
+        lines.append(f'opcuaSetupPKI("{posix(sec.pki)}")')
     if sec.client_cert is not None:
-        lines.append(f'opcuaClientCertificate("{sec.client_cert.cert_der}", '
-                     f'"{sec.client_cert.key_pem}")')
+        lines.append(f'opcuaClientCertificate("{posix(sec.client_cert.cert_der)}", '
+                     f'"{posix(sec.client_cert.key_pem)}")')
     lines += [
         'opcuaSession("OPC1", "opc.tcp://127.0.0.1:4840")',
         'opcuaSubscription("SUB1", "OPC1", 100)',
@@ -127,7 +133,7 @@ def write_startup_script(directory: Path, sec: IocSecurity) -> Path:
         id_file = directory / "identity"
         id_file.write_text("".join(f"{k}={v}\n" for k, v in sec.identity.items()))
         id_file.chmod(0o600)
-        lines.append(f'opcuaOptions("OPC1", "sec-id={id_file}")')
+        lines.append(f'opcuaOptions("OPC1", "sec-id={posix(id_file)}")')
     lines += [
         'opcuaOptions("OPC1", "debug=$(OPCUA_DEBUG=0)")',
         'dbLoadRecords("end2endTest/ioc/test_security.db", "OPCSUB=SUB1,NS=2")',
@@ -169,11 +175,15 @@ def default_ioc_security(certs) -> IocSecurity:
 def start_secure(monkeypatch, tmp_path) -> Generator[Callable[[ServerSecurity, IocSecurity],
                                                      tuple[OpcuaTestServer, DiagIOC]]]:
     """Factory starting the test server and the IOC with the given security setup."""
-    monkeypatch.setenv("OPCUA_TEST_TOP", str(REPO_ROOT))
+    monkeypatch.setenv("OPCUA_TEST_TOP", posix(REPO_ROOT))
     monkeypatch.setenv("OPCUA_DEBUG", os.environ.get("OPCUA_DEBUG", "1"))
     # Part of the IOC's application URI (must match the client certificate)
     monkeypatch.setenv("IOC", IOC_NAME)
-    executable = REPO_ROOT / "bin" / os.environ["EPICS_HOST_ARCH"] / "opcuaTestIoc"
+    # Fresh iocsh history file for each IOC (with readline, overwriting an
+    # existing history file fails on Windows, and iocsh reports an ERROR)
+    monkeypatch.setenv("EPICS_IOCSH_HISTFILE", posix(tmp_path / "iocsh_history"))
+    exe_suffix = ".exe" if sys.platform == "win32" else ""
+    executable = REPO_ROOT / "bin" / os.environ["EPICS_HOST_ARCH"] / f"opcuaTestIoc{exe_suffix}"
 
     iocs = []
     with ExitStack() as stack:
@@ -505,8 +515,8 @@ class TestUserAuthentication:
     def test_x509_certificate(self, start_secure, x509_only,
                               default_ioc_security, certs, mode) -> None:
         default_ioc_security.mode = mode
-        default_ioc_security.identity = {"cert": str(certs.user.cert_der),
-                                         "key": str(certs.user.key_pem)}
+        default_ioc_security.identity = {"cert": posix(certs.user.cert_der),
+                                         "key": posix(certs.user.key_pem)}
         server, ioc = start_secure(x509_only, default_ioc_security)
 
         session = wait_until_connected(server)
@@ -526,8 +536,8 @@ class TestUserAuthentication:
     def test_x509_encrypted_key(self, start_secure, x509_only,
                                 default_ioc_security, certs, key_format) -> None:
         # Password-protected private key, password in the identity file
-        default_ioc_security.identity = {"cert": str(certs.user.cert_der),
-                                         "key": str(certs.user_encrypted_keys[key_format]),
+        default_ioc_security.identity = {"cert": posix(certs.user.cert_der),
+                                         "key": posix(certs.user_encrypted_keys[key_format]),
                                          "pass": USER_KEY_PASSWORD}
         server, ioc = start_secure(x509_only, default_ioc_security)
 
@@ -540,23 +550,23 @@ class TestUserAuthentication:
 
     def test_x509_encrypted_key_wrong_password_rejected(self, start_secure, x509_only,
                                                         default_ioc_security, certs) -> None:
-        default_ioc_security.identity = {"cert": str(certs.user.cert_der),
-                                         "key": str(certs.user_encrypted_keys["pkcs8"]),
+        default_ioc_security.identity = {"cert": posix(certs.user.cert_der),
+                                         "key": posix(certs.user_encrypted_keys["pkcs8"]),
                                          "pass": "wrong-password"}
         server, ioc = start_secure(x509_only, default_ioc_security)
         assert_not_connected(server, ioc)
 
     def test_x509_encrypted_key_no_password_rejected(self, start_secure, x509_only,
                                                      default_ioc_security, certs) -> None:
-        default_ioc_security.identity = {"cert": str(certs.user.cert_der),
-                                         "key": str(certs.user_encrypted_keys["pkcs8"])}
+        default_ioc_security.identity = {"cert": posix(certs.user.cert_der),
+                                         "key": posix(certs.user_encrypted_keys["pkcs8"])}
         server, ioc = start_secure(x509_only, default_ioc_security)
         assert_not_connected(server, ioc)
 
     def test_unknown_x509_certificate_rejected(self, start_secure, x509_only,
                                                default_ioc_security, certs) -> None:
         # A valid certificate (with key) that is not registered as a user on the server
-        default_ioc_security.identity = {"cert": str(certs.untrusted_client.cert_der),
-                                         "key": str(certs.untrusted_client.key_pem)}
+        default_ioc_security.identity = {"cert": posix(certs.untrusted_client.cert_der),
+                                         "key": posix(certs.untrusted_client.key_pem)}
         server, ioc = start_secure(x509_only, default_ioc_security)
         assert_not_connected(server, ioc)

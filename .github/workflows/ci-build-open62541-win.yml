@@ -98,7 +98,7 @@ jobs:
     - name: Build end2end test IOC
       run: python .ci/cue.py exec make -C end2endTest/ioc
     - name: Run end2end tests
-      run: python .ci/cue.py exec pytest -v end2endTest/test_opcua.py
+      run: python .ci/cue.py exec pytest -v end2endTest/test_opcua.py end2endTest/test_security.py
 
   build-msys2:
     name: ${{ matrix.name }}
@@ -190,4 +190,4 @@ jobs:
         # DLLs needed by the test IOC: open62541, OpenSSL 3, MinGW runtime and libxml2
         $msys2 = "${{ steps.msys2.outputs.msys2-location }}"
         $env:PATH += ";C:/Users/runneradmin/.cache/open62541/bin;$msys2/opt/openssl3/ucrt64/bin;$msys2/ucrt64/bin"
-        python .ci/cue.py exec pytest -v end2endTest/test_opcua.py
+        python .ci/cue.py exec pytest -v end2endTest/test_opcua.py end2endTest/test_security.py
